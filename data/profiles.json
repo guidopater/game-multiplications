@@ -1,0 +1,12 @@
+[
+  {
+    "id": "feline",
+    "display_name": "Feline",
+    "avatar": "avatar_feline.png"
+  },
+  {
+    "id": "julius",
+    "display_name": "Julius",
+    "avatar": "avatar_julius.png"
+  }
+]

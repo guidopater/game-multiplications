@@ -1,0 +1,242 @@
+"""Timed multiplication test session."""
+
+from __future__ import annotations
+
+import random
+from dataclasses import dataclass
+from datetime import datetime
+from typing import List, Sequence, Tuple
+
+import pygame
+
+from .. import settings
+from ..models import TestConfig, TestResult
+from .base import Scene
+
+
+@dataclass(frozen=True)
+class Question:
+    left: int
+    right: int
+
+    @property
+    def answer(self) -> int:
+        return self.left * self.right
+
+    def as_text(self) -> str:
+        return f"{self.left} x {self.right}"
+
+
+class TestSessionScene(Scene):
+    """Runs through a timed sequence of multiplication questions."""
+
+    def __init__(self, app: "App", config: TestConfig, speed_label: str) -> None:
+        super().__init__(app)
+        self.config = config
+        self.speed_label = speed_label
+
+        self.title_font = settings.load_title_font(40)
+        self.question_font = settings.load_font(110)
+        self.helper_font = settings.load_font(26)
+        self.count_font = settings.load_font(32)
+        self.feedback_font = settings.load_font(32)
+
+        self.questions: List[Question] = self._generate_questions(config)
+        self.current_index = 0
+        self.input_value = ""
+        self.correct = 0
+        self.incorrect = 0
+        self.history: List[Tuple[Question, str, bool]] = []
+
+        self.elapsed = 0.0
+        self.feedback_message = "Succes! Je kunt met ENTER antwoorden."
+        self.feedback_timer = 3.0
+        self.finished = False
+        self.show_back_button = True
+
+    # Event handling -------------------------------------------------
+    def handle_events(self, events: Sequence[pygame.event.Event]) -> None:
+        if self.finished:
+            return
+
+        for event in events:
+            if self.handle_back_button_event(event):
+                return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    from .main_menu import MainMenuScene
+
+                    self.app.change_scene(MainMenuScene)
+                    return
+                if event.key in (pygame.K_BACKSPACE, pygame.K_DELETE):
+                    self.input_value = self.input_value[:-1]
+                elif event.key == pygame.K_RETURN:
+                    self._submit_answer()
+                elif event.unicode.isdigit():
+                    if len(self.input_value) < 4:
+                        self.input_value += event.unicode
+
+    # Update ---------------------------------------------------------
+    def update(self, delta_time: float) -> None:
+        if self.finished:
+            return
+
+        self.elapsed += delta_time
+        remaining = self.config.time_limit_seconds - self.elapsed
+        if remaining <= 0:
+            self._finish_session(time_up=True)
+
+        if self.feedback_timer > 0:
+            self.feedback_timer = max(self.feedback_timer - delta_time, 0)
+            if self.feedback_timer == 0:
+                self.feedback_message = ""
+
+    # Rendering ------------------------------------------------------
+    def render(self, surface: pygame.Surface) -> None:
+        Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+        self._draw_header(surface)
+        self._draw_question(surface)
+        self._draw_input(surface)
+        self._draw_progress(surface)
+        self._draw_feedback(surface)
+        self.render_back_button(surface)
+
+    # Draw helpers ---------------------------------------------------
+    def _draw_header(self, surface: pygame.Surface) -> None:
+        profile = self.app.active_profile
+        margin = settings.SCREEN_MARGIN
+        title_text = self.title_font.render(
+            f"Test voor {profile.display_name} – {self.speed_label}",
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
+        surface.blit(title_text, (margin, margin - 20))
+
+        tables_text = ", ".join(str(n) for n in self.config.tables)
+        subtitle = self.helper_font.render(f"Tafels: {tables_text}", True, settings.COLOR_TEXT_DIM)
+        surface.blit(subtitle, (margin + 4, margin + 24))
+
+        remaining = max(self.config.time_limit_seconds - self.elapsed, 0.0)
+        minutes = int(remaining) // 60
+        seconds = int(remaining) % 60
+        timer_text = self.count_font.render(f"Tijd: {minutes:02d}:{seconds:02d}", True, settings.COLOR_ACCENT_LIGHT)
+        surface.blit(timer_text, timer_text.get_rect(topright=(surface.get_width() - margin, margin - 20)))
+
+    def _draw_question(self, surface: pygame.Surface) -> None:
+        if self.current_index >= len(self.questions):
+            return
+        question = self.questions[self.current_index]
+        question_surface = self.question_font.render(question.as_text(), True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(question_surface, question_surface.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2 - 80)))
+
+    def _draw_input(self, surface: pygame.Surface) -> None:
+        input_box = pygame.Rect(0, 0, 260, 74)
+        input_box.center = (surface.get_width() // 2, surface.get_height() // 2 + 40)
+        pygame.draw.rect(surface, settings.COLOR_CARD_BASE, input_box, border_radius=22)
+        pygame.draw.rect(surface, settings.COLOR_ACCENT, input_box, width=3, border_radius=22)
+        answer_text = self.count_font.render(self.input_value or "?", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(answer_text, answer_text.get_rect(center=input_box.center))
+        hint = self.helper_font.render("Typ het antwoord en druk op ENTER", True, settings.COLOR_TEXT_DIM)
+        surface.blit(hint, hint.get_rect(center=(input_box.centerx, input_box.bottom + 36)))
+
+    def _draw_progress(self, surface: pygame.Surface) -> None:
+        total = len(self.questions)
+        progress_text = self.count_font.render(f"{self.current_index + 1 if self.current_index < total else total}/{total}", True, settings.COLOR_TEXT_PRIMARY)
+        margin = settings.SCREEN_MARGIN
+        surface.blit(progress_text, (margin, surface.get_height() - margin - 120))
+
+        correct_text = self.helper_font.render(f"Goed: {self.correct}", True, settings.COLOR_SELECTION)
+        wrong_text = self.helper_font.render(f"Fout: {self.incorrect}", True, settings.COLOR_ACCENT_LIGHT)
+        surface.blit(correct_text, (margin, surface.get_height() - margin - 80))
+        surface.blit(wrong_text, (margin + 140, surface.get_height() - margin - 80))
+
+    def _draw_feedback(self, surface: pygame.Surface) -> None:
+        if not self.feedback_message:
+            return
+        alpha = 255 if self.feedback_timer > 1 else int(255 * self.feedback_timer)
+        text_surface = self.feedback_font.render(self.feedback_message, True, settings.COLOR_ACCENT_LIGHT)
+        text_surface.set_alpha(alpha)
+        surface.blit(text_surface, text_surface.get_rect(center=(surface.get_width() // 2, settings.SCREEN_MARGIN + 10)))
+
+    # Logic ----------------------------------------------------------
+    def _generate_questions(self, config: TestConfig) -> List[Question]:
+        questions: List[Question] = []
+        for _ in range(config.question_count):
+            table = random.choice(config.tables)
+            right = random.randint(1, 10)
+            if random.random() > 0.5:
+                questions.append(Question(table, right))
+            else:
+                questions.append(Question(right, table))
+        random.shuffle(questions)
+        return questions
+
+    def _submit_answer(self) -> None:
+        if self.current_index >= len(self.questions):
+            return
+        if not self.input_value:
+            self.feedback_message = "Tik eerst een antwoord in."
+            self.feedback_timer = 1.5
+            return
+
+        question = self.questions[self.current_index]
+        try:
+            guess = int(self.input_value)
+        except ValueError:
+            self.feedback_message = "Gebruik alleen cijfers."
+            self.feedback_timer = 1.5
+            self.input_value = ""
+            return
+
+        is_correct = guess == question.answer
+        self.history.append((question, self.input_value, is_correct))
+        if is_correct:
+            self.correct += 1
+            self.feedback_message = random.choice(["Yes!", "Top!", "Lekker bezig!"])
+            self.feedback_timer = 1.0
+            self.app.play_sound("good")
+        else:
+            self.incorrect += 1
+            self.feedback_message = f"Oei! {question.left} x {question.right} = {question.answer}"
+            self.feedback_timer = 2.5
+            self.app.play_sound("wrong")
+
+        self.input_value = ""
+        self.current_index += 1
+
+        if self.current_index >= len(self.questions):
+            self._finish_session(time_up=False)
+
+    def _finish_session(self, *, time_up: bool) -> None:
+        if self.finished:
+            return
+        self.finished = True
+        result = TestResult(
+            profile_id=self.app.active_profile.identifier,
+            profile_name=self.app.active_profile.display_name,
+            tables=self.config.tables,
+            question_count=self.config.question_count,
+            answered=len(self.history),
+            correct=self.correct,
+            incorrect=self.incorrect,
+            time_limit_seconds=self.config.time_limit_seconds,
+            elapsed_seconds=min(self.elapsed, self.config.time_limit_seconds),
+            timestamp=datetime.now(),
+        )
+        self.app.scores.record_test(result)
+
+        from .test_summary import TestSummaryScene
+
+        self.app.change_scene(
+            TestSummaryScene,
+            result=result,
+            history=self.history,
+            time_up=time_up,
+            config=self.config,
+            speed_label=self.speed_label,
+        )
+
+    def on_back(self) -> None:
+        from .test_setup import TestSetupScene
+
+        self.app.change_scene(TestSetupScene)
