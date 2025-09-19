@@ -48,10 +48,42 @@ class TestSetupScene(Scene):
         self.speed_rects: List[Tuple[pygame.Rect, int]] = []
         self.question_rects: List[Tuple[pygame.Rect, int]] = []
         self.start_rect: pygame.Rect | None = None
+        self.level_images = self._load_level_images()
 
         self.feedback_message = ""
         self.feedback_timer = 0.0
         self.show_back_button = True
+
+        self.palette_table_active = {
+            "top": (116, 227, 128),
+            "bottom": (63, 186, 94),
+            "border": (36, 140, 67),
+            "shadow": (45, 122, 59),
+        }
+        self.palette_table_inactive = {
+            "top": (242, 236, 228),
+            "bottom": (209, 197, 184),
+            "border": (168, 156, 145),
+            "shadow": (150, 140, 130),
+        }
+        self.palette_question_active = {
+            "top": (137, 214, 255),
+            "bottom": (73, 158, 236),
+            "border": (45, 118, 189),
+            "shadow": (41, 99, 156),
+        }
+        self.palette_question_inactive = {
+            "top": (242, 236, 228),
+            "bottom": (209, 197, 184),
+            "border": (168, 156, 145),
+            "shadow": (150, 140, 130),
+        }
+        self.palette_start = {
+            "top": (255, 215, 90),
+            "bottom": (247, 176, 49),
+            "border": (191, 128, 38),
+            "shadow": (160, 109, 34),
+        }
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: List[pygame.event.Event]) -> None:
@@ -112,116 +144,114 @@ class TestSetupScene(Scene):
 
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        left_x = margin + 90
         title = self.title_font.render("Testmodus", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(title, title.get_rect(topleft=(margin, margin - 30)))
+        surface.blit(title, title.get_rect(topleft=(left_x, margin + 10)))
         subtitle = self.helper_font.render("Kies jouw uitdaging en druk op Start!", True, settings.COLOR_TEXT_DIM)
-        surface.blit(subtitle, subtitle.get_rect(topleft=(margin + 4, margin + 24)))
+        surface.blit(subtitle, subtitle.get_rect(topleft=(left_x + 6, margin + 68)))
 
     def _draw_tables(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        header_x = margin + 30
+        header_y = margin + 120
         header = self.section_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
-        surface.blit(header, header.get_rect(topleft=(margin, margin + 70)))
+        surface.blit(header, header.get_rect(topleft=(header_x, header_y)))
 
         cols = 5
-        button_size = (120, 60)
-        spacing = 12
-        start_x = margin
-        start_y = margin + 120
+        button_size = (150, 70)
+        spacing = 16
+        start_x = header_x
+        start_y = header_y + 60
         self.table_rects = []
+        mouse_pos = pygame.mouse.get_pos()
 
         for idx, value in enumerate(self.TABLE_VALUES):
             col = idx % cols
             row = idx // cols
-            x = start_x + col * (button_size[0] + spacing)
-            y = start_y + row * (button_size[1] + spacing)
-            rect = pygame.Rect(x, y, *button_size)
+            rect = pygame.Rect(
+                start_x + col * (button_size[0] + spacing),
+                start_y + row * (button_size[1] + spacing),
+                *button_size,
+            )
             is_selected = value in self.selected_tables
-            colour = settings.COLOR_SELECTION if is_selected else settings.COLOR_CARD_INACTIVE
-            pygame.draw.rect(surface, colour, rect, border_radius=14)
-            text_color = settings.COLOR_TEXT_PRIMARY if is_selected else settings.COLOR_TEXT_DIM
-            text = self.option_font.render(f"Tafel {value}", True, text_color)
-            surface.blit(text, text.get_rect(center=rect.center))
-            if is_selected:
-                pygame.draw.rect(surface, settings.COLOR_ACCENT, rect, width=3, border_radius=14)
-            else:
-                self._apply_inactive_style(surface, rect, border_radius=14)
-            self.table_rects.append((rect, value))
+            palette = self.palette_table_active if is_selected else self.palette_table_inactive
+            face_rect, elevation = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
+            label = self.option_font.render(f"Tafel {value}", True, settings.COLOR_TEXT_PRIMARY)
+            label_rect = label.get_rect(center=face_rect.center)
+            label_rect.y -= elevation
+            surface.blit(label, label_rect)
+            self.table_rects.append((face_rect, value))
 
         hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'C' om te wissen", True, settings.COLOR_TEXT_DIM)
-        surface.blit(hint, hint.get_rect(topleft=(margin, start_y + 2 * (button_size[1] + spacing) + 14)))
+        rows = (len(self.TABLE_VALUES) + cols - 1) // cols
+        hint_y = start_y + rows * (button_size[1] + spacing) + 12
+        surface.blit(hint, hint.get_rect(topleft=(header_x, hint_y)))
 
     def _draw_speed(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         header = self.section_font.render("Hoe snel ga je?", True, settings.COLOR_ACCENT_LIGHT)
-        surface.blit(header, header.get_rect(topleft=(margin, margin + 260)))
+        header_pos = header.get_rect(topleft=(margin + 30, margin + 330))
+        surface.blit(header, header_pos)
         self.speed_rects = []
 
-        base_x = margin
-        base_y = margin + 310
-        card_width = 200
-        card_height = 100
-        spacing = 16
+        base_x = margin + 30
+        base_y = header_pos.bottom + 40
+        spacing = 28
+        card_width = 208
+        card_height = 120
+        mouse_pos = pygame.mouse.get_pos()
 
         for index, option in enumerate(self.SPEED_OPTIONS):
-            x = base_x + index * (card_width + spacing)
-            rect = pygame.Rect(x, base_y, card_width, card_height)
+            rect = pygame.Rect(base_x + index * (card_width + spacing), base_y, card_width, card_height)
             is_selected = index == self.selected_speed_index
-            colour = settings.COLOR_SELECTION if is_selected else (70, 96, 144)
-            pygame.draw.rect(surface, colour, rect, border_radius=18)
-            text_color = settings.COLOR_TEXT_PRIMARY if is_selected else settings.COLOR_TEXT_DIM
-            text = self.option_font.render(f"{option.animal} {option.label}", True, text_color)
-            surface.blit(text, text.get_rect(midtop=(rect.centerx, rect.top + 14)))
+            palette = self.palette_table_active if is_selected else self.palette_table_inactive
+            face_rect, _ = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
 
-            minutes_color = settings.COLOR_TEXT_PRIMARY if is_selected else settings.COLOR_TEXT_DIM
-            minutes_text = self.helper_font.render(f"{option.minutes} minuten", True, minutes_color)
-            surface.blit(minutes_text, minutes_text.get_rect(midtop=(rect.centerx, rect.top + 48)))
+            image = self.level_images[index] if index < len(self.level_images) else None
+            if image:
+                scaled = pygame.transform.smoothscale(image, (face_rect.width - 20, face_rect.height - 20))
+                surface.blit(scaled, scaled.get_rect(center=face_rect.center))
+            else:
+                label = self.option_font.render(f"{option.animal} {option.label}", True, settings.COLOR_TEXT_PRIMARY)
+                surface.blit(label, label.get_rect(center=face_rect.center))
 
-            description_color = settings.COLOR_TEXT_DIM if is_selected else (120, 130, 150)
-            description = self.helper_font.render(option.description, True, description_color)
-            surface.blit(description, description.get_rect(midtop=(rect.centerx, rect.top + 72)))
-
-            if is_selected:
-                pygame.draw.rect(surface, settings.COLOR_ACCENT, rect, width=3, border_radius=18)
-            self.speed_rects.append((rect, index))
-
-            if not is_selected:
-                self._apply_inactive_style(surface, rect, border_radius=18)
+            self.speed_rects.append((face_rect, index))
 
     def _draw_questions(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        header = self.section_font.render("Hoeveel sommen wil je doen?", True, settings.COLOR_ACCENT_LIGHT)
-        surface.blit(header, header.get_rect(topleft=(surface.get_width() - margin - 260, margin + 70)))
-        self.question_rects = []
-
-        width = 220
+        width = 260
         height = 72
-        spacing = 18
-        base_x = surface.get_width() - settings.SCREEN_MARGIN - width
-        base_y = settings.SCREEN_MARGIN + 120
+        spacing = 22
+        base_x = surface.get_width() - margin - width - 60
+        base_y = margin + 160
+        header = self.section_font.render("Hoeveel sommen wil je doen?", True, settings.COLOR_ACCENT_LIGHT)
+        surface.blit(header, header.get_rect(topleft=(base_x, margin + 110)))
+        self.question_rects = []
+        mouse_pos = pygame.mouse.get_pos()
 
         for index, amount in enumerate(self.QUESTION_CHOICES):
             rect = pygame.Rect(base_x, base_y + index * (height + spacing), width, height)
             is_selected = index == self.selected_question_index
-            colour = settings.COLOR_SELECTION if is_selected else settings.COLOR_CARD_INACTIVE
-            pygame.draw.rect(surface, colour, rect, border_radius=18)
-            text_color = settings.COLOR_TEXT_PRIMARY if is_selected else settings.COLOR_TEXT_DIM
-            text = self.option_font.render(f"{amount} sommen", True, text_color)
-            surface.blit(text, text.get_rect(center=rect.center))
-            if is_selected:
-                pygame.draw.rect(surface, settings.COLOR_ACCENT, rect, width=3, border_radius=18)
-            self.question_rects.append((rect, index))
-
-            if not is_selected:
-                self._apply_inactive_style(surface, rect, border_radius=18)
+            palette = self.palette_question_active if is_selected else self.palette_question_inactive
+            face_rect, elevation = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
+            label = self.option_font.render(f"{amount} sommen", True, settings.COLOR_TEXT_PRIMARY)
+            label_rect = label.get_rect(center=face_rect.center)
+            label_rect.y -= elevation
+            surface.blit(label, label_rect)
+            self.question_rects.append((face_rect, index))
 
     def _draw_start_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        rect = pygame.Rect(surface.get_width() - margin - 220, surface.get_height() - margin - 72, 220, 72)
-        colour = settings.COLOR_ACCENT
-        pygame.draw.rect(surface, colour, rect, border_radius=24)
+        width = 260
+        height = 86
+        rect = pygame.Rect(surface.get_width() - margin - width, surface.get_height() - margin - height, width, height)
+        hover = rect.collidepoint(pygame.mouse.get_pos())
+        face_rect, elevation = self._draw_capsule(surface, rect, self.palette_start, False, hover)
         text = self.button_font.render("Start!", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(text, text.get_rect(center=rect.center))
-        self.start_rect = rect
+        text_rect = text.get_rect(center=face_rect.center)
+        text_rect.y -= elevation
+        surface.blit(text, text_rect)
+        self.start_rect = face_rect
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -249,13 +279,64 @@ class TestSetupScene(Scene):
 
         self.app.change_scene(TestSessionScene, config=config, speed_label=speed.label)
 
-    @staticmethod
-    def _apply_inactive_style(surface: pygame.Surface, rect: pygame.Rect, *, border_radius: int) -> None:
-        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(overlay, settings.COLOR_INACTIVE_OVERLAY, overlay.get_rect(), border_radius=border_radius)
-        surface.blit(overlay, rect.topleft)
-
     def on_back(self) -> None:
         from .main_menu import MainMenuScene
 
         self.app.change_scene(MainMenuScene)
+
+    def _draw_capsule(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        palette: dict[str, tuple[int, int, int]],
+        selected: bool,
+        hover: bool,
+    ) -> tuple[pygame.Rect, int]:
+        radius = 28
+        depth_rest = 12
+        depth_hover = 6
+        depth_pressed = 0
+
+        if selected:
+            elevation = depth_pressed
+        elif hover:
+            elevation = depth_hover
+        else:
+            elevation = depth_rest
+
+        shadow_rect = rect.move(0, elevation)
+        pygame.draw.rect(surface, palette["shadow"], shadow_rect, border_radius=radius)
+
+        face_height = rect.height - (depth_rest - elevation)
+        face_rect = pygame.Rect(rect.left, rect.top - (depth_rest - elevation), rect.width, face_height)
+
+        button_surface = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
+        for y in range(face_rect.height):
+            ratio = y / max(face_rect.height - 1, 1)
+            color = tuple(
+                int(palette["top"][i] + (palette["bottom"][i] - palette["top"][i]) * ratio)
+                for i in range(3)
+            )
+            pygame.draw.line(button_surface, color, (0, y), (face_rect.width, y))
+
+        mask = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=radius)
+        button_surface.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+        surface.blit(button_surface, face_rect.topleft)
+        pygame.draw.rect(surface, palette["border"], face_rect, width=4, border_radius=radius)
+
+        return face_rect, (depth_rest - elevation)
+
+    def _load_level_images(self) -> List[pygame.Surface]:
+        images: List[pygame.Surface] = []
+        for index in range(1, 5):
+            path = self.app.assets_dir / "images" / f"level_{index}.png"
+            if not path.exists():
+                continue
+            try:
+                image = pygame.image.load(path).convert_alpha()
+            except pygame.error:
+                continue
+            images.append(image)
+        return images

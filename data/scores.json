@@ -1,0 +1,23 @@
+{
+  "feline": [
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        2,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 30,
+      "incorrect": 0,
+      "time_limit_seconds": 600,
+      "elapsed_seconds": 75.94900000000214,
+      "timestamp": "2025-09-20T00:26:13.530493"
+    }
+  ]
+}

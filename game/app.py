@@ -30,6 +30,13 @@ class App:
         settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT = screen_size
         settings.SCREEN_SIZE = screen_size
         pygame.display.set_caption("Tafelheld")
+        icon_path = root / "assets" / "images" / "icon.png"
+        if icon_path.exists():
+            try:
+                icon_surface = pygame.image.load(str(icon_path)).convert_alpha()
+                pygame.display.set_icon(icon_surface)
+            except pygame.error:
+                pass
         self.clock = pygame.time.Clock()
         self.running = True
 
