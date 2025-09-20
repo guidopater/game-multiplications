@@ -21,3 +21,4 @@
 - [ ] Add unlockable themes or rewards purchasable with coins.
 - [ ] Move 'back'-button on leaderboard to top-left corner, move title a bit to the right
 - [ ] Make leaderboard page also scrollable like 'settings'
+- [ ] Settings screen must be improved
