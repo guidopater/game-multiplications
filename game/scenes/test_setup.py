@@ -8,6 +8,12 @@ from typing import List, Sequence, Tuple
 import pygame
 
 from .. import settings
+from ..ui import draw_glossy_button
+
+try:
+    import numpy as np
+except ModuleNotFoundError:  # pragma: no cover - numpy is expected but degrade gracefully
+    np = None
 from ..models import TestConfig
 from .base import Scene
 
@@ -52,7 +58,8 @@ class TestSetupScene(Scene):
 
         self.feedback_message = ""
         self.feedback_timer = 0.0
-        self.show_back_button = True
+        self.show_back_button = False
+        self.back_button_rect: pygame.Rect | None = None
 
         self.palette_table_active = {
             "top": (116, 227, 128),
@@ -84,17 +91,27 @@ class TestSetupScene(Scene):
             "border": (191, 128, 38),
             "shadow": (160, 109, 34),
         }
+        self.palette_back = {
+            "top": (216, 196, 255),
+            "bottom": (176, 148, 227),
+            "border": (126, 98, 192),
+            "shadow": (102, 78, 152),
+        }
+        self.tables_bottom = settings.SCREEN_MARGIN
+        self.tables_right = settings.SCREEN_MARGIN
+        self.question_column_x = 0
+        self.speed_palettes: dict[int, dict[str, tuple[int, int, int]]] = {}
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: List[pygame.event.Event]) -> None:
         for event in events:
-            if self.handle_back_button_event(event):
-                return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
+                    self._handle_back_action()
+                    return
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
-                    from .main_menu import MainMenuScene
-
-                    self.app.change_scene(MainMenuScene)
+                    self._handle_back_action()
                     return
                 if event.key == pygame.K_RETURN:
                     self._start_test()
@@ -117,11 +134,13 @@ class TestSetupScene(Scene):
                         break
                 for rect, index in self.speed_rects:
                     if rect.collidepoint(event.pos):
-                        self.selected_speed_index = index
+                        if self.selected_speed_index != index:
+                            self.selected_speed_index = index
                         break
                 for rect, index in self.question_rects:
                     if rect.collidepoint(event.pos):
-                        self.selected_question_index = index
+                        if self.selected_question_index != index:
+                            self.selected_question_index = index
                         break
 
     # Update ---------------------------------------------------------
@@ -134,17 +153,18 @@ class TestSetupScene(Scene):
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+        self._draw_back_button(surface)
         self._draw_title(surface)
         self._draw_tables(surface)
         self._draw_speed(surface)
         self._draw_questions(surface)
         self._draw_start_button(surface)
         self._draw_feedback(surface)
-        self.render_back_button(surface)
 
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        left_x = margin + 90
+        back_right = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 90)
+        left_x = back_right
         title = self.title_font.render("Testmodus", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(left_x, margin + 10)))
         subtitle = self.helper_font.render("Kies jouw uitdaging en druk op Start!", True, settings.COLOR_TEXT_DIM)
@@ -156,9 +176,10 @@ class TestSetupScene(Scene):
         header_y = margin + 120
         header = self.section_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(header_x, header_y)))
+        self.table_header_top = header_y
 
         cols = 5
-        button_size = (150, 70)
+        button_size = (150, 64)
         spacing = 16
         start_x = header_x
         start_y = header_y + 60
@@ -175,83 +196,117 @@ class TestSetupScene(Scene):
             )
             is_selected = value in self.selected_tables
             palette = self.palette_table_active if is_selected else self.palette_table_inactive
-            face_rect, elevation = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
+            face_rect = draw_glossy_button(
+                surface,
+                rect,
+                palette,
+                selected=is_selected,
+                hover=rect.collidepoint(mouse_pos),
+                corner_radius=32,
+            )
             label = self.option_font.render(f"Tafel {value}", True, settings.COLOR_TEXT_PRIMARY)
-            label_rect = label.get_rect(center=face_rect.center)
-            label_rect.y -= elevation
-            surface.blit(label, label_rect)
-            self.table_rects.append((face_rect, value))
+            surface.blit(label, label.get_rect(center=face_rect.center))
+            self.table_rects.append((rect, value))
 
-        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'C' om te wissen", True, settings.COLOR_TEXT_DIM)
+        if self.TABLE_VALUES:
+            visible_cols = min(cols, len(self.TABLE_VALUES))
+            self.tables_right = start_x + visible_cols * (button_size[0] + spacing) - spacing
+        else:
+            self.tables_right = start_x
+
         rows = (len(self.TABLE_VALUES) + cols - 1) // cols
+        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'C' om te wissen", True, settings.COLOR_TEXT_DIM)
         hint_y = start_y + rows * (button_size[1] + spacing) + 12
         surface.blit(hint, hint.get_rect(topleft=(header_x, hint_y)))
+        self.tables_bottom = hint_y + hint.get_height()
 
     def _draw_speed(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        header_y = self.tables_bottom + 40
         header = self.section_font.render("Hoe snel ga je?", True, settings.COLOR_ACCENT_LIGHT)
-        header_pos = header.get_rect(topleft=(margin + 30, margin + 330))
+        header_pos = header.get_rect(topleft=(margin + 30, header_y))
         surface.blit(header, header_pos)
         self.speed_rects = []
 
         base_x = margin + 30
-        base_y = header_pos.bottom + 40
-        spacing = 28
-        card_width = 208
-        card_height = 120
+        base_y = header_pos.bottom + 32
+        spacing = 24
+        card_width = 148
+        card_height = 148
         mouse_pos = pygame.mouse.get_pos()
 
         for index, option in enumerate(self.SPEED_OPTIONS):
             rect = pygame.Rect(base_x + index * (card_width + spacing), base_y, card_width, card_height)
             is_selected = index == self.selected_speed_index
-            palette = self.palette_table_active if is_selected else self.palette_table_inactive
-            face_rect, _ = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
+            base_palette = self.speed_palettes.get(index)
+            if base_palette is None:
+                base_palette = self.palette_table_active if is_selected else self.palette_table_inactive
+            palette = base_palette if is_selected else self._desaturate_palette(base_palette)
+
+            face_rect = draw_glossy_button(
+                surface,
+                rect,
+                palette,
+                selected=is_selected,
+                hover=rect.collidepoint(mouse_pos),
+                corner_radius=32,
+            )
 
             image = self.level_images[index] if index < len(self.level_images) else None
             if image:
-                scaled = pygame.transform.smoothscale(image, (face_rect.width - 20, face_rect.height - 20))
+                inset = 28
+                scaled = pygame.transform.smoothscale(image, (face_rect.width - inset, face_rect.height - inset))
+                if not is_selected:
+                    scaled = self._greyscale_surface(scaled)
+                    scaled.set_alpha(150)
                 surface.blit(scaled, scaled.get_rect(center=face_rect.center))
             else:
                 label = self.option_font.render(f"{option.animal} {option.label}", True, settings.COLOR_TEXT_PRIMARY)
                 surface.blit(label, label.get_rect(center=face_rect.center))
 
-            self.speed_rects.append((face_rect, index))
+            self.speed_rects.append((rect, index))
 
     def _draw_questions(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         width = 260
         height = 72
         spacing = 22
-        base_x = surface.get_width() - margin - width - 60
-        base_y = margin + 160
-        header = self.section_font.render("Hoeveel sommen wil je doen?", True, settings.COLOR_ACCENT_LIGHT)
-        surface.blit(header, header.get_rect(topleft=(base_x, margin + 110)))
+        base_x = self.tables_right + 80
+        header_top = getattr(self, "table_header_top", self.tables_bottom)
+        header = self.section_font.render("Hoeveel sommen", True, settings.COLOR_ACCENT_LIGHT)
+        surface.blit(header, header.get_rect(topleft=(base_x, header_top)))
+        base_y = header_top + 60
         self.question_rects = []
         mouse_pos = pygame.mouse.get_pos()
+        self.question_column_x = base_x
 
         for index, amount in enumerate(self.QUESTION_CHOICES):
             rect = pygame.Rect(base_x, base_y + index * (height + spacing), width, height)
             is_selected = index == self.selected_question_index
             palette = self.palette_question_active if is_selected else self.palette_question_inactive
-            face_rect, elevation = self._draw_capsule(surface, rect, palette, is_selected, rect.collidepoint(mouse_pos))
+            face_rect = draw_glossy_button(surface, rect, palette, selected=is_selected, hover=rect.collidepoint(mouse_pos))
             label = self.option_font.render(f"{amount} sommen", True, settings.COLOR_TEXT_PRIMARY)
-            label_rect = label.get_rect(center=face_rect.center)
-            label_rect.y -= elevation
-            surface.blit(label, label_rect)
-            self.question_rects.append((face_rect, index))
+            surface.blit(label, label.get_rect(center=face_rect.center))
+            self.question_rects.append((rect, index))
 
     def _draw_start_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         width = 260
         height = 86
-        rect = pygame.Rect(surface.get_width() - margin - width, surface.get_height() - margin - height, width, height)
+        base_x = getattr(self, "question_column_x", surface.get_width() - margin - width)
+        rect = pygame.Rect(base_x, surface.get_height() - margin - height, width, height)
         hover = rect.collidepoint(pygame.mouse.get_pos())
-        face_rect, elevation = self._draw_capsule(surface, rect, self.palette_start, False, hover)
+        face_rect = draw_glossy_button(
+            surface,
+            rect,
+            self.palette_start,
+            selected=False,
+            hover=hover,
+            corner_radius=32,
+        )
         text = self.button_font.render("Start!", True, settings.COLOR_TEXT_PRIMARY)
-        text_rect = text.get_rect(center=face_rect.center)
-        text_rect.y -= elevation
-        surface.blit(text, text_rect)
-        self.start_rect = face_rect
+        surface.blit(text, text.get_rect(center=face_rect.center))
+        self.start_rect = rect
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -284,49 +339,32 @@ class TestSetupScene(Scene):
 
         self.app.change_scene(MainMenuScene)
 
-    def _draw_capsule(
-        self,
-        surface: pygame.Surface,
-        rect: pygame.Rect,
-        palette: dict[str, tuple[int, int, int]],
-        selected: bool,
-        hover: bool,
-    ) -> tuple[pygame.Rect, int]:
-        radius = 28
-        depth_rest = 12
-        depth_hover = 6
-        depth_pressed = 0
+    def _handle_back_action(self) -> None:
+        if hasattr(self.app, "sounds") and "back" in self.app.sounds:
+            self.app.sounds["back"].play()
+        from .main_menu import MainMenuScene
 
-        if selected:
-            elevation = depth_pressed
-        elif hover:
-            elevation = depth_hover
-        else:
-            elevation = depth_rest
+        self.app.change_scene(MainMenuScene)
 
-        shadow_rect = rect.move(0, elevation)
-        pygame.draw.rect(surface, palette["shadow"], shadow_rect, border_radius=radius)
 
-        face_height = rect.height - (depth_rest - elevation)
-        face_rect = pygame.Rect(rect.left, rect.top - (depth_rest - elevation), rect.width, face_height)
-
-        button_surface = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
-        for y in range(face_rect.height):
-            ratio = y / max(face_rect.height - 1, 1)
-            color = tuple(
-                int(palette["top"][i] + (palette["bottom"][i] - palette["top"][i]) * ratio)
-                for i in range(3)
-            )
-            pygame.draw.line(button_surface, color, (0, y), (face_rect.width, y))
-
-        mask = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=radius)
-        button_surface.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-
-        surface.blit(button_surface, face_rect.topleft)
-        pygame.draw.rect(surface, palette["border"], face_rect, width=4, border_radius=radius)
-
-        return face_rect, (depth_rest - elevation)
+    def _draw_back_button(self, surface: pygame.Surface) -> None:
+        margin = settings.SCREEN_MARGIN
+        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        padding_x = 32
+        padding_y = 18
+        width = text.get_width() + padding_x * 2
+        height = text.get_height() + padding_y * 2
+        rect = pygame.Rect(margin, margin + 6, width, height)
+        face_rect = draw_glossy_button(
+            surface,
+            rect,
+            self.palette_back,
+            selected=False,
+            hover=rect.collidepoint(pygame.mouse.get_pos()),
+            corner_radius=28,
+        )
+        surface.blit(text, text.get_rect(center=face_rect.center))
+        self.back_button_rect = rect
 
     def _load_level_images(self) -> List[pygame.Surface]:
         images: List[pygame.Surface] = []
@@ -339,4 +377,56 @@ class TestSetupScene(Scene):
             except pygame.error:
                 continue
             images.append(image)
+            if np is not None:
+                self.speed_palettes[index - 1] = self._palette_from_image(image)
+        return images
+
+    def _palette_from_image(self, surface: pygame.Surface) -> dict[str, tuple[int, int, int]]:
+        arr = np.array(pygame.transform.smoothscale(surface, (50, 50)))
+        rgb = arr[:, :, :3].reshape(-1, 3).mean(axis=0)
+        base = tuple(int(c) for c in rgb)
+        return {
+            "top": self._lighten_color(base, 0.18),
+            "bottom": self._darken_color(base, 0.18),
+            "border": self._darken_color(base, 0.35),
+            "shadow": self._darken_color(base, 0.55),
+        }
+
+    @staticmethod
+    def _lighten_color(color: tuple[int, int, int], amount: float) -> tuple[int, int, int]:
+        return tuple(min(255, int(c + (255 - c) * amount)) for c in color)
+
+    @staticmethod
+    def _darken_color(color: tuple[int, int, int], amount: float) -> tuple[int, int, int]:
+        return tuple(max(0, int(c * (1 - amount))) for c in color)
+
+    @staticmethod
+    def _desaturate_palette(palette: dict[str, tuple[int, int, int]]) -> dict[str, tuple[int, int, int]]:
+        def to_grey(col: tuple[int, int, int]) -> tuple[int, int, int]:
+            avg = int(col[0] * 0.299 + col[1] * 0.587 + col[2] * 0.114)
+            return (avg, avg, avg)
+
+        base = to_grey(palette["top"])
+        return {
+            "top": TestSetupScene._lighten_color(base, 0.1),
+            "bottom": TestSetupScene._darken_color(base, 0.1),
+            "border": TestSetupScene._darken_color(base, 0.25),
+            "shadow": TestSetupScene._darken_color(base, 0.45),
+        }
+
+    @staticmethod
+    def _greyscale_surface(surface: pygame.Surface) -> pygame.Surface:
+        if np is None:
+            grey = surface.copy()
+            grey.fill((120, 120, 120, 0), special_flags=pygame.BLEND_RGB_MULT)
+            return grey
+
+        grey = surface.copy()
+        arr = pygame.surfarray.pixels3d(grey)
+        luminance = (arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114).astype("uint8")
+        arr[:, :, 0] = luminance
+        arr[:, :, 1] = luminance
+        arr[:, :, 2] = luminance
+        del arr
+        return grey
         return images

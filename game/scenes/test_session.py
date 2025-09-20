@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Sequence, Tuple
@@ -52,6 +53,10 @@ class TestSessionScene(Scene):
         self.feedback_message = "Succes! Je kunt met ENTER antwoorden."
         self.feedback_timer = 3.0
         self.finished = False
+        self.question_start_time = 0.0
+        self.table_stats: dict[int, dict[str, float]] = defaultdict(
+            lambda: {"questions": 0.0, "correct": 0.0, "incorrect": 0.0, "total_time": 0.0}
+        )
         self.show_back_button = True
 
     # Event handling -------------------------------------------------
@@ -189,7 +194,9 @@ class TestSessionScene(Scene):
             return
 
         is_correct = guess == question.answer
+        answer_time = max(self.elapsed - self.question_start_time, 0.0)
         self.history.append((question, self.input_value, is_correct))
+        self._record_table_stat(question, is_correct, answer_time)
         if is_correct:
             self.correct += 1
             self.feedback_message = random.choice(["Yes!", "Top!", "Lekker bezig!"])
@@ -203,6 +210,7 @@ class TestSessionScene(Scene):
 
         self.input_value = ""
         self.current_index += 1
+        self.question_start_time = self.elapsed
 
         if self.current_index >= len(self.questions):
             self._finish_session(time_up=False)
@@ -222,6 +230,7 @@ class TestSessionScene(Scene):
             time_limit_seconds=self.config.time_limit_seconds,
             elapsed_seconds=min(self.elapsed, self.config.time_limit_seconds),
             timestamp=datetime.now(),
+            table_stats={int(k): dict(v) for k, v in self.table_stats.items()},
         )
         self.app.scores.record_test(result)
 
@@ -234,7 +243,26 @@ class TestSessionScene(Scene):
             time_up=time_up,
             config=self.config,
             speed_label=self.speed_label,
+            table_stats=self.table_stats,
         )
+
+    def _record_table_stat(self, question: Question, is_correct: bool, answer_time: float) -> None:
+        table = self._determine_table(question)
+        stats = self.table_stats[table]
+        stats["questions"] += 1
+        stats["total_time"] += answer_time
+        if is_correct:
+            stats["correct"] += 1
+        else:
+            stats["incorrect"] += 1
+
+    def _determine_table(self, question: Question) -> int:
+        if question.left in self.config.tables:
+            return question.left
+        if question.right in self.config.tables:
+            return question.right
+        # Fallback: return the larger multiplier
+        return max(question.left, question.right)
 
     def on_back(self) -> None:
         from .test_setup import TestSetupScene

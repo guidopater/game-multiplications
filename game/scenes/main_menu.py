@@ -9,6 +9,7 @@ from typing import List, Tuple
 import pygame
 
 from .. import settings
+from ..ui import draw_glossy_button
 from .base import Scene
 
 
@@ -113,6 +114,8 @@ class MainMenuScene(Scene):
                     continue
                 for index, rect in enumerate(self.option_rects):
                     if rect.collidepoint(event.pos):
+                        if hasattr(self.app, "sounds") and "click" in self.app.sounds:
+                            self.app.sounds["click"].play()
                         self.activate_option(index)
                         break
 
@@ -178,20 +181,12 @@ class MainMenuScene(Scene):
 
             is_selected = index == self.selected_index
             is_hover = base_rect.collidepoint(mouse_pos)
-            face_rect, elevation = self._draw_button(
-                surface,
-                base_rect,
-                palette,
-                selected=is_selected,
-                hover=is_hover,
-            )
+            face_rect = draw_glossy_button(surface, base_rect, palette, selected=is_selected, hover=is_hover)
 
             text_surface = self.option_font.render(option.label, True, (255, 255, 255))
-            text_rect = text_surface.get_rect(center=face_rect.center)
-            text_rect.y -= elevation
-            surface.blit(text_surface, text_rect)
+            surface.blit(text_surface, text_surface.get_rect(center=face_rect.center))
 
-            self.option_rects.append(face_rect)
+            self.option_rects.append(base_rect)
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -279,51 +274,6 @@ class MainMenuScene(Scene):
 
         self._avatar_cache[profile.identifier] = masked
         return masked
-
-    def _draw_button(
-        self,
-        surface: pygame.Surface,
-        rect: pygame.Rect,
-        palette: dict[str, tuple[int, int, int]],
-        *,
-        selected: bool,
-        hover: bool,
-    ) -> tuple[pygame.Rect, int]:
-        radius = 36
-        depth_rest = 14
-        depth_hover = 8
-        depth_pressed = 0
-
-        if selected:
-            elevation = depth_pressed
-        elif hover:
-            elevation = depth_hover
-        else:
-            elevation = depth_rest
-
-        shadow_rect = rect.move(0, elevation)
-        pygame.draw.rect(surface, palette["shadow"], shadow_rect, border_radius=radius)
-
-        face_height = rect.height - (depth_rest - elevation)
-        face_rect = pygame.Rect(rect.left, rect.top - (depth_rest - elevation), rect.width, face_height)
-
-        button_surface = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
-        for y in range(face_rect.height):
-            ratio = y / max(face_rect.height - 1, 1)
-            color = tuple(
-                int(palette["top"][i] + (palette["bottom"][i] - palette["top"][i]) * ratio)
-                for i in range(3)
-            )
-            pygame.draw.line(button_surface, color, (0, y), (face_rect.width, y))
-
-        mask = pygame.Surface((face_rect.width, face_rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=radius)
-        button_surface.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-
-        surface.blit(button_surface, face_rect.topleft)
-        pygame.draw.rect(surface, palette["border"], face_rect, width=4, border_radius=radius)
-
-        return face_rect, (depth_rest - elevation)
 
     @staticmethod
     def _make_inactive_avatar(surface: pygame.Surface) -> pygame.Surface:

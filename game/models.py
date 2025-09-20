@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
-from typing import List, Sequence
+from typing import Dict, List, Sequence
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,7 @@ class TestResult:
     time_limit_seconds: int
     elapsed_seconds: float
     timestamp: datetime
+    table_stats: Dict[int, Dict[str, float]]
 
     def to_serialisable(self) -> dict:
         data = asdict(self)
@@ -44,6 +45,9 @@ class TestResult:
             {
                 "tables": list(self.tables),
                 "timestamp": self.timestamp.isoformat(),
+                "table_stats": {
+                    str(key): value for key, value in self.table_stats.items()
+                },
             }
         )
         return data
@@ -55,3 +59,20 @@ class TestResult:
     @property
     def remaining_seconds(self) -> float:
         return max(self.time_limit_seconds - self.elapsed_seconds, 0.0)
+
+    def slowest_tables(self) -> List[int]:
+        averages = [
+            (table, stats.get("total_time", 0.0) / max(stats.get("questions", 1), 1))
+            for table, stats in self.table_stats.items()
+            if stats.get("questions", 0)
+        ]
+        averages.sort(key=lambda item: item[1], reverse=True)
+        return [table for table, _ in averages[:2]]
+
+    def tricky_tables(self) -> List[int]:
+        stats = [
+            (table, value.get("incorrect", 0))
+            for table, value in self.table_stats.items()
+        ]
+        stats.sort(key=lambda item: item[1], reverse=True)
+        return [table for table, incorrect in stats if incorrect > 0]

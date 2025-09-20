@@ -30,6 +30,7 @@ class App:
         settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT = screen_size
         settings.SCREEN_SIZE = screen_size
         pygame.display.set_caption("Tafelheld")
+        root = Path(__file__).resolve().parents[1]
         icon_path = root / "assets" / "images" / "icon.png"
         if icon_path.exists():
             try:
@@ -40,7 +41,6 @@ class App:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        root = Path(__file__).resolve().parents[1]
         self.assets_dir = root / "assets"
         self.data_dir = root / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -119,8 +119,9 @@ class App:
         if not pygame.mixer.get_init():
             return
         sound_map = {
-            "good": "good.wav",
-            "wrong": "wrong.wav",
+            "good": "good1.mp3",
+            "wrong": "wrong.mp3",
+            "back": "whoosh.mp3",
         }
         for key, filename in sound_map.items():
             path = self.assets_dir / "sounds" / filename
