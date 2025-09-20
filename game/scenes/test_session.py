@@ -147,7 +147,7 @@ class TestSessionScene(Scene):
         minutes = int(remaining) // 60
         seconds = int(remaining) % 60
         timer_text = self.count_font.render(f"Tijd: {minutes:02d}:{seconds:02d}", True, settings.COLOR_ACCENT_LIGHT)
-        timer_x = surface.get_width() - margin - timer_text.get_width() - 80
+        timer_x = surface.get_width() - margin - timer_text.get_width() - 20
         surface.blit(timer_text, (timer_x, margin - 20))
 
         coin_icon = getattr(self.app, "coin_icon", None)
@@ -287,7 +287,6 @@ class TestSessionScene(Scene):
             table_stats={int(k): dict(v) for k, v in self.table_stats.items()},
         )
         self.coin_delta = self._calculate_reward(result)
-        self.session_coins = max(0, self.coin_delta)
         if self.coin_delta:
             self.app.adjust_active_coins(self.coin_delta)
         self.app.scores.record_test(result)
@@ -324,7 +323,8 @@ class TestSessionScene(Scene):
         return max(question.left, question.right)
 
     def _per_question_reward(self, table: int) -> int:
-        return 6 + table
+        # Base reward scales gently with table difficulty (roughly 2–4 coins).
+        return 2 + table // 4
 
     def _calculate_reward(self, result: TestResult) -> int:
         total = 0
@@ -334,9 +334,23 @@ class TestSessionScene(Scene):
             if is_correct:
                 total += per
             else:
-                total -= max(2, per // 2)
+                total -= 2
+
         total = max(0, total)
-        total += int(result.remaining_seconds // 5)
+
+        if result.time_limit_seconds:
+            ratio = result.remaining_seconds / result.time_limit_seconds
+        else:
+            ratio = 0.0
+        time_bonus = int(ratio * 8)
+        speed_bonus = {
+            "Slak": 0,
+            "Schildpad": 2,
+            "Haas": 4,
+            "Cheeta": 6,
+        }.get(self.speed_label, 0)
+        total += max(0, time_bonus + speed_bonus)
+
         return total
 
     def on_back(self) -> None:

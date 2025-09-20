@@ -108,17 +108,17 @@ class TestSummaryScene(Scene):
 
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        back_right = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 40)
         heading = "Tijd is op!" if self.time_up else "Test afgerond!"
         title = self.title_font.render(heading, True, settings.COLOR_TEXT_PRIMARY)
-        title_x = margin + 140
-        surface.blit(title, title.get_rect(topleft=(title_x, margin - 30)))
+        surface.blit(title, title.get_rect(topleft=(back_right, margin - 30)))
 
         subtitle = self.helper_font.render(
             f"Goed gedaan {self.result.profile_name}! Snelheid: {self.speed_label}",
             True,
             settings.COLOR_TEXT_DIM,
         )
-        surface.blit(subtitle, subtitle.get_rect(topleft=(title_x + 4, margin + 24)))
+        surface.blit(subtitle, subtitle.get_rect(topleft=(back_right + 4, margin + 24)))
 
     def _draw_stats(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
