@@ -245,6 +245,16 @@ class MainMenuScene(Scene):
             name_rect = name_surface.get_rect(midtop=(rect.centerx, rect.bottom + 6))
             surface.blit(name_surface, name_rect)
 
+            if self.app.coin_icon:
+                coin_rect = self.app.coin_icon.get_rect(midtop=(rect.centerx - 20, name_rect.bottom + 6))
+                surface.blit(self.app.coin_icon, coin_rect)
+                coin_text = self.profile_font.render(str(profile.coins), True, name_color)
+                coin_text_rect = coin_text.get_rect(midtop=(coin_rect.centerx + 24, name_rect.bottom + 8))
+                surface.blit(coin_text, coin_text_rect)
+            else:
+                coin_text = self.profile_font.render(f"{profile.coins}", True, name_color)
+                surface.blit(coin_text, coin_text.get_rect(midtop=(rect.centerx, name_rect.bottom + 6)))
+
             self.profile_rects.append((rect, profile.identifier))
 
     def _get_avatar_surface(self, profile) -> pygame.Surface:

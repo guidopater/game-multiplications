@@ -26,6 +26,7 @@ class TestSummaryScene(Scene):
         config: TestConfig,
         speed_label: str,
         table_stats: dict[int, dict[str, float]],
+        coin_delta: int,
     ) -> None:
         super().__init__(app)
         self.result = result
@@ -34,6 +35,8 @@ class TestSummaryScene(Scene):
         self.config = config
         self.speed_label = speed_label
         self.table_stats = {int(k): dict(v) for k, v in table_stats.items()}
+        self.coin_delta = coin_delta
+        self.total_coins = getattr(self.app.active_profile, "coins", 0)
 
         self.title_font = settings.load_title_font(52)
         self.stat_font = settings.load_font(32)
@@ -116,12 +119,17 @@ class TestSummaryScene(Scene):
             True,
             settings.COLOR_TEXT_DIM,
         )
+        coins_label = f"Munten: {'+' if self.coin_delta >= 0 else ''}{self.coin_delta}"
+        coins_line = self.stat_font.render(coins_label, True, settings.COLOR_ACCENT)
+        total_line = self.helper_font.render(f"Totaal nu: {self.total_coins}", True, settings.COLOR_TEXT_PRIMARY)
 
         surface.blit(correct_line, correct_line.get_rect(topleft=(card.left + 32, card.top + 28)))
         surface.blit(wrong_line, wrong_line.get_rect(topleft=(card.left + 32, card.top + 74)))
         surface.blit(accuracy_line, accuracy_line.get_rect(topleft=(card.left + 32, card.top + 122)))
         surface.blit(answered_line, answered_line.get_rect(topleft=(card.left + 32, card.top + 170)))
         surface.blit(time_line, time_line.get_rect(topleft=(card.left + 32, card.top + 206)))
+        surface.blit(coins_line, coins_line.get_rect(topright=(card.right - 32, card.top + 28)))
+        surface.blit(total_line, total_line.get_rect(topright=(card.right - 32, card.top + 74)))
 
     def _draw_history(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN

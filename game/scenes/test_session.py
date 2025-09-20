@@ -57,6 +57,7 @@ class TestSessionScene(Scene):
         self.table_stats: dict[int, dict[str, float]] = defaultdict(
             lambda: {"questions": 0.0, "correct": 0.0, "incorrect": 0.0, "total_time": 0.0}
         )
+        self.coin_delta = 0
         self.show_back_button = True
 
     # Event handling -------------------------------------------------
@@ -206,7 +207,7 @@ class TestSessionScene(Scene):
             self.incorrect += 1
             self.feedback_message = f"Oei! {question.left} x {question.right} = {question.answer}"
             self.feedback_timer = 2.5
-            self.app.play_sound("wrong")
+        self.app.play_sound("wrong")
 
         self.input_value = ""
         self.current_index += 1
@@ -232,6 +233,9 @@ class TestSessionScene(Scene):
             timestamp=datetime.now(),
             table_stats={int(k): dict(v) for k, v in self.table_stats.items()},
         )
+        self.coin_delta = self._calculate_reward(result)
+        if self.coin_delta:
+            self.app.adjust_active_coins(self.coin_delta)
         self.app.scores.record_test(result)
 
         from .test_summary import TestSummaryScene
@@ -244,6 +248,7 @@ class TestSessionScene(Scene):
             config=self.config,
             speed_label=self.speed_label,
             table_stats=self.table_stats,
+            coin_delta=self.coin_delta,
         )
 
     def _record_table_stat(self, question: Question, is_correct: bool, answer_time: float) -> None:
@@ -263,6 +268,22 @@ class TestSessionScene(Scene):
             return question.right
         # Fallback: return the larger multiplier
         return max(question.left, question.right)
+
+    def _per_question_reward(self, table: int) -> int:
+        return 6 + table
+
+    def _calculate_reward(self, result: TestResult) -> int:
+        total = 0
+        for question, _, is_correct in self.history:
+            table = self._determine_table(question)
+            per = self._per_question_reward(table)
+            if is_correct:
+                total += per
+            else:
+                total -= max(2, per // 2)
+        total = max(0, total)
+        total += int(result.remaining_seconds // 5)
+        return total
 
     def on_back(self) -> None:
         from .test_setup import TestSetupScene

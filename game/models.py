@@ -8,14 +8,23 @@ from pathlib import Path
 from typing import Dict, List, Sequence
 
 
-@dataclass(frozen=True)
+@dataclass
 class PlayerProfile:
     identifier: str
     display_name: str
     avatar_filename: str
+    coins: int = 0
 
     def resolve_avatar_path(self, assets_dir: Path) -> Path:
         return assets_dir / "images" / self.avatar_filename
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.identifier,
+            "display_name": self.display_name,
+            "avatar": self.avatar_filename,
+            "coins": self.coins,
+        }
 
 
 @dataclass

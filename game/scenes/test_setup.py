@@ -304,6 +304,9 @@ class TestSetupScene(Scene):
             hover=hover,
             corner_radius=32,
         )
+        estimate = self._estimate_max_reward()
+        estimate_text = self.helper_font.render(f"Te verdienen: {estimate} munten", True, settings.COLOR_TEXT_DIM)
+        surface.blit(estimate_text, estimate_text.get_rect(center=(face_rect.centerx, face_rect.top - 24)))
         text = self.button_font.render("Start!", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(text, text.get_rect(center=face_rect.center))
         self.start_rect = rect
@@ -429,4 +432,14 @@ class TestSetupScene(Scene):
         arr[:, :, 2] = luminance
         del arr
         return grey
+
+    def _estimate_max_reward(self) -> int:
+        if not self.selected_tables:
+            return 0
+        avg_table = sum(self.selected_tables) / len(self.selected_tables)
+        per_question = 6 + avg_table
+        questions = self.QUESTION_CHOICES[self.selected_question_index]
+        speed = self.SPEED_OPTIONS[self.selected_speed_index]
+        time_bonus = speed.minutes * 2
+        return int(per_question * questions + time_bonus)
         return images

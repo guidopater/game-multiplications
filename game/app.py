@@ -49,10 +49,12 @@ class App:
         self.profiles = self._load_profiles()
         if not self.profiles:
             self.profiles = [
-                PlayerProfile("feline", "Feline", "avatar_feline.png"),
-                PlayerProfile("julius", "Julius", "avatar_julius.png"),
+                PlayerProfile("feline", "Feline", "avatar_feline.png", coins=0),
+                PlayerProfile("julius", "Julius", "avatar_julius.png", coins=0),
             ]
-        self.active_profile: PlayerProfile = self.profiles[0]
+            self.save_profiles()
+        self.active_profile_index = 0
+        self.active_profile: PlayerProfile = self.profiles[self.active_profile_index]
         self.profile_styles: dict[str, dict[str, tuple[int, int, int] | tuple[tuple[int, int, int], tuple[int, int, int]]]] = {
             "feline": {
                 "gradient": ((255, 163, 68), (248, 73, 147)),
@@ -61,9 +63,11 @@ class App:
                 "gradient": ((92, 215, 144), (33, 150, 83)),
             },
         }
+        self.coin_icon = self._load_coin_icon(self.assets_dir / "images" / "coin.png")
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         self._load_sounds()
         self._apply_profile_style(self.active_profile.identifier)
+        self.save_profiles()
 
         self._scene: Scene = MainMenuScene(self)
 
@@ -77,6 +81,11 @@ class App:
         self._scene = new_scene_cls(self, **kwargs)
 
     def set_active_profile(self, profile: PlayerProfile) -> None:
+        try:
+            index = next(i for i, p in enumerate(self.profiles) if p.identifier == profile.identifier)
+        except StopIteration:
+            index = 0
+        self.active_profile_index = index
         self.active_profile = profile
         self._apply_profile_style(profile.identifier)
 
@@ -102,9 +111,15 @@ class App:
             identifier = str(item.get("id", "")).strip()
             display_name = str(item.get("display_name", "")).strip() or identifier.capitalize()
             avatar_filename = str(item.get("avatar", "")).strip()
+            coins = int(item.get("coins", 0))
             if identifier:
-                profiles.append(PlayerProfile(identifier, display_name, avatar_filename))
+                profiles.append(PlayerProfile(identifier, display_name, avatar_filename, coins=coins))
         return profiles
+
+    def save_profiles(self) -> None:
+        config_path = self.data_dir / "profiles.json"
+        data = [profile.to_dict() for profile in self.profiles]
+        config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _apply_profile_style(self, profile_id: str) -> None:
         style = self.profile_styles.get(profile_id)
@@ -135,6 +150,22 @@ class App:
         sound = self.sounds.get(key)
         if sound:
             sound.play()
+
+    def adjust_active_coins(self, delta: int) -> int:
+        profile = self.active_profile
+        profile.coins = max(0, profile.coins + delta)
+        self.profiles[self.active_profile_index] = profile
+        self.save_profiles()
+        return profile.coins
+
+    def _load_coin_icon(self, path: Path) -> pygame.Surface | None:
+        if not path.exists():
+            return None
+        try:
+            icon = pygame.image.load(path).convert_alpha()
+        except pygame.error:
+            return None
+        return pygame.transform.smoothscale(icon, (28, 28))
 
     def run(self) -> None:
         """Main loop of the application."""
