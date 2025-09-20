@@ -1,8 +1,8 @@
 # Project TODOs
 
 ## Core Features
-- [ ] Build the "Oefenen" (practice) mode including gentle feedback flows.
-- [ ] Create the "Hoe deed je het?" progress/leaderboard screen.
+- [x] Build the "Oefenen" (practice) mode including gentle feedback flows.
+- [x] Create the "Hoe deed je het?" progress/leaderboard screen.
 - [ ] Implement the "Instellingen" settings screen (audio, difficulty presets, etc.).
 
 ## Platform & Availability
@@ -15,4 +15,3 @@
 ## Polish & Future Ideas
 - [ ] Consider syncing coins/profiles across devices.
 - [ ] Add unlockable themes or rewards purchasable with coins.
-

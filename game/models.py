@@ -90,3 +90,70 @@ class TestResult:
         ]
         stats.sort(key=lambda item: item[1], reverse=True)
         return [table for table, incorrect in stats if incorrect > 0]
+
+    @classmethod
+    def from_serialisable(cls, payload: dict) -> "TestResult":
+        """Reconstruct a test result saved via ``to_serialisable``."""
+
+        def _as_int(value: object, default: int = 0) -> int:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return default
+
+        def _as_float(value: object, default: float = 0.0) -> float:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return default
+
+        tables_raw = payload.get("tables", [])
+        tables: List[int] = []
+        if isinstance(tables_raw, list):
+            for item in tables_raw:
+                try:
+                    tables.append(int(item))
+                except (TypeError, ValueError):
+                    continue
+
+        timestamp_value = payload.get("timestamp")
+        if isinstance(timestamp_value, str):
+            try:
+                timestamp = datetime.fromisoformat(timestamp_value)
+            except ValueError:
+                timestamp = datetime.now()
+        else:
+            timestamp = datetime.now()
+
+        raw_table_stats = payload.get("table_stats", {})
+        table_stats: Dict[int, Dict[str, float]] = {}
+        if isinstance(raw_table_stats, dict):
+            for key, stats in raw_table_stats.items():
+                try:
+                    table_key = int(key)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(stats, dict):
+                    continue
+                table_stats[table_key] = {
+                    "questions": _as_float(stats.get("questions"), 0.0),
+                    "correct": _as_float(stats.get("correct"), 0.0),
+                    "incorrect": _as_float(stats.get("incorrect"), 0.0),
+                    "total_time": _as_float(stats.get("total_time"), 0.0),
+                }
+
+        elapsed_value = payload.get("elapsed_seconds", payload.get("elapsed", 0.0))
+
+        return cls(
+            profile_id=str(payload.get("profile_id", "")),
+            profile_name=str(payload.get("profile_name", "")),
+            tables=tables,
+            question_count=_as_int(payload.get("question_count"), 0),
+            answered=_as_int(payload.get("answered"), 0),
+            correct=_as_int(payload.get("correct"), 0),
+            incorrect=_as_int(payload.get("incorrect"), 0),
+            time_limit_seconds=_as_int(payload.get("time_limit_seconds"), 0),
+            elapsed_seconds=_as_float(elapsed_value, 0.0),
+            timestamp=timestamp,
+            table_stats=table_stats,
+        )

@@ -14,6 +14,9 @@ This document captures the shared understanding of the multiplication game so fu
   - Player chooses tables only (`PracticeSetupScene`).
   - Session (`PracticeSessionScene`) adapts question weighting using recent accuracy and answer time so tricky tables resurface more often.
   - Exiting shows a summary (`PracticeSummaryScene`) with accuracy, streaks, tricky tables, and quick tips. Players can restart with the same configuration or return to the menu.
+- **Progress Overview**
+  - "Hoe deed je het?" opens `ProgressOverviewScene` with the latest test highlight, friendly trends, and a leaderboard comparing profiles.
+  - Pulls historical tests from `ScoreRepository` and spotlights tricky tables to focus on next time.
 - **Test Mode** (partially implemented)
   - Time-bound challenge configured in `TestSetupScene` with table selection, number of questions, and speed presets.
   - Results will feed coins and the leaderboard through `ScoreRepository`.

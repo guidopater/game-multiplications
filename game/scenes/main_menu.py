@@ -321,6 +321,10 @@ class MainMenuScene(Scene):
             from .test_setup import TestSetupScene
 
             self.app.change_scene(TestSetupScene)
+        elif option.action == "leaderboard":
+            from .progress_overview import ProgressOverviewScene
+
+            self.app.change_scene(ProgressOverviewScene)
         else:
             # Placeholder until the dedicated scenes are ready.
             self.feedback_message = f"'{option.label}' komt binnenkort!"
