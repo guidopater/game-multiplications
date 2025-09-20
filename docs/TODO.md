@@ -14,7 +14,10 @@
 
 ## Localization
 - [ ] Introduce multi-language support (strings scheiden, NL/EN toggle toepassen).
+- [ ] Ontwerp een lichte vertaalstructuur (resource-bestanden, fallback-logica) en koppel deze aan `SettingsScene`.
 
 ## Polish & Future Ideas
 - [ ] Consider syncing coins/profiles across devices.
 - [ ] Add unlockable themes or rewards purchasable with coins.
+- [ ] Move 'back'-button on leaderboard to top-left corner, move title a bit to the right
+- [ ] Make leaderboard page also scrollable like 'settings'

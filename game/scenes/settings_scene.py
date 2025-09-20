@@ -31,6 +31,8 @@ class SettingsScene(Scene):
 
     SPEED_LABELS: Sequence[str] = ("Slak", "Schildpad", "Haas", "Cheeta")
     QUESTION_CHOICES: Sequence[int] = (30, 50, 100)
+    TABLE_COLS: int = 5
+    TABLE_BUTTON_SIZE: Tuple[int, int] = (60, 48)
 
     def __init__(self, app: "App") -> None:
         super().__init__(app)
@@ -55,6 +57,8 @@ class SettingsScene(Scene):
         self.test_table_rects: List[Tuple[pygame.Rect, int]] = []
         self.speed_rects: Dict[str, pygame.Rect] = {}
         self.question_rects: Dict[int, pygame.Rect] = {}
+        self.profile_button_rects: Dict[str, pygame.Rect] = {}
+        self.data_button_rects: Dict[str, pygame.Rect] = {}
 
         self.name_input_active = False
         self.name_buffer = self.app.active_profile.display_name
@@ -62,7 +66,16 @@ class SettingsScene(Scene):
 
         self.buy_rect: pygame.Rect | None = None
         self.save_rect: pygame.Rect | None = None
-        self.back_rect: pygame.Rect | None = None
+        self.back_top_rect: pygame.Rect | None = None
+        self.footer_back_rect: pygame.Rect | None = None
+
+        self.scroll_offset = 0.0
+        self.max_scroll = 0.0
+        self.content_height = 0.0
+        self.pointer_content_pos: Tuple[float, float] = (0.0, 0.0)
+        self.card_inner_margin = 28
+        self.section_spacing = 24
+        self.grid_spacing = 14
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: Iterable[pygame.event.Event]) -> None:
@@ -70,6 +83,9 @@ class SettingsScene(Scene):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self._handle_mouse_click(event.pos):
                     continue
+            elif event.type == pygame.MOUSEWHEEL:
+                self._adjust_scroll(-event.y * 60)
+                continue
             if event.type == pygame.KEYDOWN:
                 if self.name_input_active:
                     self._handle_name_input(event)
@@ -80,70 +96,87 @@ class SettingsScene(Scene):
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     self._save_settings()
                     continue
+                if event.key == pygame.K_UP:
+                    self._adjust_scroll(-40)
+                    continue
+                if event.key == pygame.K_DOWN:
+                    self._adjust_scroll(40)
+                    continue
+                if event.key == pygame.K_PAGEUP:
+                    self._adjust_scroll(-200)
+                    continue
+                if event.key == pygame.K_PAGEDOWN:
+                    self._adjust_scroll(200)
+                    continue
 
     def _handle_mouse_click(self, position: Tuple[int, int]) -> bool:
-        if self.back_rect and self.back_rect.collidepoint(position):
+        content_pos = (position[0], position[1] + self.scroll_offset)
+
+        if self.back_top_rect and self.back_top_rect.collidepoint(content_pos):
             self._handle_back()
             return True
-        if self.save_rect and self.save_rect.collidepoint(position):
+        if self.save_rect and self.save_rect.collidepoint(content_pos):
             self._save_settings()
             return True
-        if self.buy_rect and self.buy_rect.collidepoint(position):
+        if self.buy_rect and self.buy_rect.collidepoint(content_pos):
             self._show_support_message()
             return True
+        if self.footer_back_rect and self.footer_back_rect.collidepoint(content_pos):
+            self._handle_back()
+            return True
 
-        if self.music_toggle_rect and self.music_toggle_rect.collidepoint(position):
+        if self.music_toggle_rect and self.music_toggle_rect.collidepoint(content_pos):
             self.settings.music_enabled = not self.settings.music_enabled
             self.has_unsaved_changes = True
             self._apply_music_volume()
             return True
-        if self.effects_toggle_rect and self.effects_toggle_rect.collidepoint(position):
+        if self.effects_toggle_rect and self.effects_toggle_rect.collidepoint(content_pos):
             self.settings.effects_enabled = not self.settings.effects_enabled
             self.has_unsaved_changes = True
             return True
-        if self.large_text_toggle_rect and self.large_text_toggle_rect.collidepoint(position):
+        if self.large_text_toggle_rect and self.large_text_toggle_rect.collidepoint(content_pos):
             self.settings.large_text = not self.settings.large_text
             self.has_unsaved_changes = True
             return True
 
         for key, rect in self.feedback_option_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self.settings.feedback_style = key
                 self.has_unsaved_changes = True
                 return True
 
         for code, rect in self.language_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self.settings.language = code
                 self.has_unsaved_changes = True
                 return True
 
-        self._handle_grid_click(position, self.practice_table_rects, self.settings.default_practice_tables)
-        self._handle_grid_click(position, self.test_table_rects, self.settings.default_test_tables)
+        self._handle_grid_click(content_pos, self.practice_table_rects, self.settings.default_practice_tables)
+        self._handle_grid_click(content_pos, self.test_table_rects, self.settings.default_test_tables)
 
         for label, rect in self.speed_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self.settings.default_test_speed = label
                 self.has_unsaved_changes = True
                 return True
 
         for quantity, rect in self.question_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self.settings.default_test_questions = quantity
                 self.has_unsaved_changes = True
                 return True
 
-        if self.name_input_rect and self.name_input_rect.collidepoint(position):
+        if self.name_input_rect and self.name_input_rect.collidepoint(content_pos):
             self.name_input_active = True
             return True
 
         for identifier, rect in self.profile_button_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self._handle_profile_action(identifier)
                 return True
 
         for identifier, rect in self.data_button_rects.items():
-            if rect.collidepoint(position):
+            if rect.collidepoint(content_pos):
                 self._handle_data_action(identifier)
                 return True
 
@@ -169,24 +202,44 @@ class SettingsScene(Scene):
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
-        self._draw_header(surface)
-        y = settings.SCREEN_MARGIN + 100
-        y = self._draw_audio_card(surface, y)
-        y = self._draw_defaults_card(surface, y + 16)
-        y = self._draw_feedback_language_card(surface, y + 16)
-        y = self._draw_profile_card(surface, y + 16)
-        y = self._draw_data_card(surface, y + 16)
-        self._draw_support_card(surface)
-        self._draw_footer_buttons(surface)
-        self._draw_feedback(surface)
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
+
+        content_surface_height = surface.get_height() + 1200
+        content_surface = pygame.Surface((surface.get_width(), content_surface_height), pygame.SRCALPHA)
+
+        content_bottom = self._render_content(content_surface)
+        self.content_height = content_bottom
+        self.max_scroll = max(0.0, self.content_height - surface.get_height())
+        self.scroll_offset = max(0.0, min(self.scroll_offset, self.max_scroll))
+        self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
+
+        surface.blit(content_surface, (0, -int(self.scroll_offset)))
 
     # Drawing helpers ------------------------------------------------
+    def _render_content(self, surface: pygame.Surface) -> int:
+        self._draw_back_button(surface)
+        self._draw_header(surface)
+        y = settings.SCREEN_MARGIN + 120
+        spacer = self.section_spacing
+        y = self._draw_audio_card(surface, y) + spacer
+        y = self._draw_defaults_card(surface, y) + spacer
+        y = self._draw_feedback_language_card(surface, y) + spacer
+        y = self._draw_profile_card(surface, y) + spacer
+        y = self._draw_data_card(surface, y) + spacer
+        y = self._draw_support_card(surface, y) + spacer
+        y = self._draw_footer_buttons(surface, y)
+        self._draw_feedback(surface)
+        return y + settings.SCREEN_MARGIN
+
     def _draw_header(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        back_right = (self.back_top_rect.right + 24) if self.back_top_rect else margin
         title = self.title_font.render("Instellingen", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(title, title.get_rect(topleft=(margin, margin - 20)))
+        surface.blit(title, title.get_rect(topleft=(back_right, margin - 20)))
         subtitle = self.helper_font.render("Pas het spel aan op jouw gezin.", True, settings.COLOR_TEXT_DIM)
-        surface.blit(subtitle, subtitle.get_rect(topleft=(margin + 6, margin + 32)))
+        surface.blit(subtitle, subtitle.get_rect(topleft=(back_right + 6, margin + 24)))
 
     def _draw_card(self, surface: pygame.Surface, top: int, height: int) -> pygame.Rect:
         margin = settings.SCREEN_MARGIN
@@ -195,97 +248,172 @@ class SettingsScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, rect, width=3, border_radius=32)
         return rect
 
-    def _draw_audio_card(self, surface: pygame.Surface, top: int) -> int:
-        card = self._draw_card(surface, top, 150)
-        heading = self.section_font.render("Geluid", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+    def _draw_back_button(self, surface: pygame.Surface) -> None:
+        margin = settings.SCREEN_MARGIN
+        rect = pygame.Rect(margin, margin - 8, 140, 44)
+        palette = {
+            "top": (216, 196, 255),
+            "bottom": (176, 148, 227),
+            "border": (126, 98, 192),
+            "shadow": (102, 78, 152),
+        }
+        draw_glossy_button(
+            surface,
+            rect,
+            palette,
+            selected=False,
+            hover=rect.collidepoint(pygame.mouse.get_pos()),
+            corner_radius=24,
+        )
+        label = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(label, label.get_rect(center=rect.center))
+        self.back_top_rect = rect
 
+    def _draw_audio_card(self, surface: pygame.Surface, top: int) -> int:
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        toggle_height = 48
+        total_height = int(inner * 2 + heading_h + self.section_spacing + toggle_height)
+        card = self._draw_card(surface, top, total_height)
+        heading = self.section_font.render("Geluid", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
+
+        toggle_y = card.top + inner + heading_h + self.section_spacing
         self.music_toggle_rect = self._draw_toggle(
             surface,
-            card.left + 32,
-            card.top + 80,
+            card.left + inner,
+            toggle_y,
             "Muziek",
             self.settings.music_enabled,
         )
         self.effects_toggle_rect = self._draw_toggle(
             surface,
-            card.left + 260,
-            card.top + 80,
+            self.music_toggle_rect.right + self.section_spacing,
+            toggle_y,
             "Effecten",
             self.settings.effects_enabled,
         )
         return card.bottom
 
     def _draw_defaults_card(self, surface: pygame.Surface, top: int) -> int:
-        card_height = 320
-        card = self._draw_card(surface, top, card_height)
-        heading = self.section_font.render("Standaard instellingen", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        label_h = self.option_font.get_height()
+        button_width, button_height = self.TABLE_BUTTON_SIZE
+        grid_width = self.TABLE_COLS * button_width + (self.TABLE_COLS - 1) * self.grid_spacing
+        grid_height = button_height * 2 + self.grid_spacing
 
+        left_height = (
+            heading_h
+            + self.section_spacing
+            + label_h
+            + self.grid_spacing
+            + grid_height
+            + self.section_spacing
+            + label_h
+            + self.grid_spacing
+            + grid_height
+        )
+        column_buttons_height = label_h + self.grid_spacing + len(self.SPEED_LABELS) * 52
+        questions_buttons_height = label_h + self.grid_spacing + len(self.QUESTION_CHOICES) * 52
+        right_height = heading_h + self.section_spacing + max(column_buttons_height, questions_buttons_height)
+
+        total_height = int(inner * 2 + max(left_height, right_height))
+        card = self._draw_card(surface, top, total_height)
+
+        heading = self.section_font.render("Standaard instellingen", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
+
+        column_top = card.top + inner + heading_h + self.section_spacing
         practice_title = self.option_font.render("Oefenen tafels", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(practice_title, practice_title.get_rect(topleft=(card.left + 32, card.top + 80)))
+        surface.blit(practice_title, practice_title.get_rect(topleft=(card.left + inner, column_top)))
+        practice_grid_top = practice_title.get_rect().bottom + self.grid_spacing
         self.practice_table_rects = self._draw_table_grid(
             surface,
-            origin=(card.left + 32, card.top + 122),
+            origin=(card.left + inner, practice_grid_top),
             selected=self.settings.default_practice_tables,
         )
 
+        test_title_top = practice_grid_top + grid_height + self.section_spacing
         test_title = self.option_font.render("Test tafels", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(test_title, test_title.get_rect(topleft=(card.left + 32, card.top + 200)))
+        surface.blit(test_title, test_title.get_rect(topleft=(card.left + inner, test_title_top)))
+        test_grid_top = test_title.get_rect().bottom + self.grid_spacing
         self.test_table_rects = self._draw_table_grid(
             surface,
-            origin=(card.left + 32, card.top + 242),
+            origin=(card.left + inner, test_grid_top),
             selected=self.settings.default_test_tables,
         )
 
         self.speed_rects = {}
-        anchor_x = card.left + 420
+        right_column_x = card.left + inner + grid_width + self.section_spacing * 3
         speed_title = self.option_font.render("Snelheid", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(speed_title, speed_title.get_rect(topleft=(anchor_x, card.top + 80)))
+        surface.blit(speed_title, speed_title.get_rect(topleft=(right_column_x, column_top)))
+        speed_button_top = speed_title.get_rect().bottom + self.grid_spacing
         for index, label in enumerate(self.SPEED_LABELS):
-            rect = pygame.Rect(anchor_x, card.top + 120 + index * 52, 140, 44)
+            rect = pygame.Rect(right_column_x, speed_button_top + index * 52, 170, 44)
             selected = self.settings.default_test_speed == label
             self.speed_rects[label] = self._draw_small_button(surface, rect, label, selected)
 
         questions_title = self.option_font.render("Aantal vragen", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(questions_title, questions_title.get_rect(topleft=(anchor_x + 200, card.top + 80)))
+        questions_x = right_column_x + 200
+        surface.blit(questions_title, questions_title.get_rect(topleft=(questions_x, column_top)))
+        questions_button_top = questions_title.get_rect().bottom + self.grid_spacing
         self.question_rects = {}
         for index, quantity in enumerate(self.QUESTION_CHOICES):
-            rect = pygame.Rect(anchor_x + 200, card.top + 120 + index * 52, 160, 44)
+            rect = pygame.Rect(questions_x, questions_button_top + index * 52, 170, 44)
             selected = self.settings.default_test_questions == quantity
             self.question_rects[quantity] = self._draw_small_button(surface, rect, str(quantity), selected)
 
         return card.bottom
 
     def _draw_feedback_language_card(self, surface: pygame.Surface, top: int) -> int:
-        card = self._draw_card(surface, top, 180)
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        label_h = self.option_font.get_height()
+        feedback_row_height = 50
+        language_row_height = label_h + self.grid_spacing + 44
+        large_text_row_height = label_h + self.grid_spacing + 44
+        total_height = int(
+            inner * 2
+            + heading_h
+            + self.section_spacing
+            + feedback_row_height
+            + self.section_spacing
+            + language_row_height
+            + self.section_spacing
+            + large_text_row_height
+        )
+        card = self._draw_card(surface, top, total_height)
         heading = self.section_font.render("Feedback & taal", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         self.feedback_option_rects = {}
-        x = card.left + 32
+        feedback_top = card.top + inner + heading_h + self.section_spacing
+        x = card.left + inner
         for option, label in self.FEEDBACK_OPTIONS:
-            rect = pygame.Rect(x, card.top + 80, 180, 50)
+            rect = pygame.Rect(x, feedback_top, 200, 50)
             selected = self.settings.feedback_style == option
             self.feedback_option_rects[option] = self._draw_small_button(surface, rect, label, selected)
-            x += 200
+            x += rect.width + self.section_spacing
 
         language_title = self.option_font.render("Taal", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(language_title, language_title.get_rect(topleft=(card.left + 32, card.top + 130)))
+        language_top = feedback_top + feedback_row_height + self.section_spacing
+        surface.blit(language_title, language_title.get_rect(topleft=(card.left + inner, language_top)))
         self.language_rects = {}
-        lx = card.left + 120
+        lx = card.left + inner + language_title.get_width() + self.section_spacing
         for code, label in self.LANGUAGE_OPTIONS:
-            rect = pygame.Rect(lx, card.top + 128, 160, 44)
+            rect = pygame.Rect(lx, language_top - 4, 180, 44)
             selected = self.settings.language == code
             self.language_rects[code] = self._draw_small_button(surface, rect, label, selected)
-            lx += 180
+            lx += rect.width + self.section_spacing
 
         large_text_title = self.option_font.render("Grote tekst", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(large_text_title, large_text_title.get_rect(topleft=(card.left + 420, card.top + 80)))
+        large_text_top = language_top + label_h + self.section_spacing
+        surface.blit(large_text_title, large_text_title.get_rect(topleft=(card.left + inner, large_text_top)))
         self.large_text_toggle_rect = self._draw_toggle(
             surface,
-            card.left + 420,
-            card.top + 128,
+            card.left + inner + large_text_title.get_width() + self.section_spacing,
+            large_text_top - 4,
             "Aan",
             self.settings.large_text,
         )
@@ -293,14 +421,29 @@ class SettingsScene(Scene):
         return card.bottom
 
     def _draw_profile_card(self, surface: pygame.Surface, top: int) -> int:
-        card = self._draw_card(surface, top, 220)
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        label_h = self.option_font.get_height()
+        total_height = int(
+            inner * 2
+            + heading_h
+            + self.section_spacing
+            + label_h
+            + self.grid_spacing
+            + 52
+            + self.section_spacing
+            + 52 * 2
+            + self.grid_spacing
+        )
+        card = self._draw_card(surface, top, total_height)
         heading = self.section_font.render("Profielen", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         name_label = self.option_font.render("Naam actief profiel", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(name_label, name_label.get_rect(topleft=(card.left + 32, card.top + 84)))
+        name_top = card.top + inner + heading.get_height() + self.section_spacing
+        surface.blit(name_label, name_label.get_rect(topleft=(card.left + inner, name_top)))
 
-        input_rect = pygame.Rect(card.left + 32, card.top + 128, 320, 52)
+        input_rect = pygame.Rect(card.left + inner, name_top + name_label.get_height() + self.grid_spacing, 360, 52)
         color = settings.COLOR_SELECTION if self.name_input_active else settings.COLOR_CARD_INACTIVE
         pygame.draw.rect(surface, color, input_rect, border_radius=18)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, input_rect, width=2, border_radius=18)
@@ -318,11 +461,12 @@ class SettingsScene(Scene):
             "border": (172, 78, 23),
             "shadow": (138, 62, 19),
         }
+        button_row_top = input_rect.bottom + self.section_spacing
         specs = [
-            ("save_name", card.left + 380, card.top + 120, "Bewaar naam"),
-            ("new_profile", card.left + 380, card.top + 182, "Nieuw profiel"),
-            ("reset_coins", card.left + 600, card.top + 120, "Reset munten"),
-            ("delete_profile", card.left + 600, card.top + 182, "Verwijder profiel"),
+            ("save_name", card.left + inner, button_row_top, "Bewaar naam"),
+            ("new_profile", card.left + inner + 220, button_row_top, "Nieuw profiel"),
+            ("reset_coins", card.left + inner, button_row_top + 64, "Reset munten"),
+            ("delete_profile", card.left + inner + 220, button_row_top + 64, "Verwijder profiel"),
         ]
         for key, x, y, label in specs:
             rect = pygame.Rect(x, y, 200, 52)
@@ -332,20 +476,22 @@ class SettingsScene(Scene):
                 rect,
                 palette,
                 selected=False,
-                hover=rect.collidepoint(pygame.mouse.get_pos()),
+                hover=self._is_hover(rect),
                 corner_radius=24,
             )
             text = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(text, text.get_rect(center=rect.center))
-
         return card.bottom
 
     def _draw_data_card(self, surface: pygame.Surface, top: int) -> int:
-        card = self._draw_card(surface, top, 180)
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        total_height = int(inner * 2 + heading_h + self.section_spacing + 56 + self.grid_spacing + self.helper_font.get_height() + 6)
+        card = self._draw_card(surface, top, total_height)
         heading = self.section_font.render("Data & privacy", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
-        self.data_button_rects = self._data_buttons(card)
+        self.data_button_rects = self._data_buttons(card, inner)
         palettes = {
             "export_scores": {
                 "top": (84, 188, 255),
@@ -377,45 +523,47 @@ class SettingsScene(Scene):
                 rect,
                 palettes[key],
                 selected=False,
-                hover=rect.collidepoint(pygame.mouse.get_pos()),
+                hover=self._is_hover(rect),
                 corner_radius=24,
             )
             text = self.button_font.render(labels[key], True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(text, text.get_rect(center=rect.center))
 
         info = self.helper_font.render("Let op: resets vragen geen bevestiging, gebruik ze bewust!", True, settings.COLOR_TEXT_DIM)
-        surface.blit(info, info.get_rect(topleft=(card.left + 32, card.bottom - 40)))
-
+        info_top = self.data_button_rects["reset_all"].bottom + self.grid_spacing
+        surface.blit(info, info.get_rect(topleft=(card.left + inner, info_top)))
         return card.bottom
 
-    def _data_buttons(self, card: pygame.Rect) -> Dict[str, pygame.Rect]:
-        base_x = card.left + 32
-        base_y = card.top + 90
+    def _data_buttons(self, card: pygame.Rect, inner: int) -> Dict[str, pygame.Rect]:
+        base_x = card.left + inner
+        base_y = card.top + inner + self.section_font.get_height() + self.section_spacing
         return {
             "export_scores": pygame.Rect(base_x, base_y, 220, 56),
             "reset_scores": pygame.Rect(base_x + 240, base_y, 280, 56),
             "reset_all": pygame.Rect(base_x + 540, base_y, 240, 56),
         }
 
-    def _draw_support_card(self, surface: pygame.Surface) -> None:
-        margin = settings.SCREEN_MARGIN
-        height = 200
-        card = self._draw_card(surface, surface.get_height() - margin - height - 120, height)
+    def _draw_support_card(self, surface: pygame.Surface, top: int) -> int:
+        inner = self.card_inner_margin
+        heading_h = self.section_font.get_height()
+        line_height = self.helper_font.get_height()
+        total_height = int(inner * 2 + heading_h + self.section_spacing + 3 * (line_height + 6) + self.section_spacing + 56)
+        card = self._draw_card(surface, top, total_height)
         heading = self.section_font.render("Dankjewel!", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
+        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         lines = [
             "Dit spel is gemaakt om kinderen spelenderwijs tafels te oefenen.",
             "Geen advertenties, geen tracking – gewoon vrolijk leren.",
             "Vind je het waardevol? Trakteer ons dan op een kop koffie!",
         ]
-        y = card.top + 78
+        y = card.top + inner + heading_h + self.grid_spacing
         for line in lines:
             text = self.helper_font.render(line, True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(topleft=(card.left + 32, y)))
-            y += 32
+            surface.blit(text, text.get_rect(topleft=(card.left + inner, y)))
+            y += self.helper_font.get_height() + 6
 
-        self.buy_rect = pygame.Rect(card.right - 220, card.top + 110, 200, 56)
+        self.buy_rect = pygame.Rect(card.right - inner - 200, card.bottom - inner - 56, 200, 56)
         draw_glossy_button(
             surface,
             self.buy_rect,
@@ -426,17 +574,18 @@ class SettingsScene(Scene):
                 "shadow": (160, 109, 34),
             },
             selected=False,
-            hover=self.buy_rect.collidepoint(pygame.mouse.get_pos()),
+            hover=self._is_hover(self.buy_rect),
             corner_radius=28,
         )
         label = self.button_font.render("Koop een koffie", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(label, label.get_rect(center=self.buy_rect.center))
 
-    def _draw_footer_buttons(self, surface: pygame.Surface) -> None:
+        return card.bottom
+
+    def _draw_footer_buttons(self, surface: pygame.Surface, top: int) -> int:
         margin = settings.SCREEN_MARGIN
-        bottom = surface.get_height() - margin - 50
-        self.save_rect = pygame.Rect(surface.get_width() - margin - 240, bottom, 240, 60)
-        self.back_rect = pygame.Rect(surface.get_width() - margin - 500, bottom, 240, 60)
+        self.save_rect = pygame.Rect(surface.get_width() - margin - 240, top, 240, 60)
+        self.footer_back_rect = pygame.Rect(surface.get_width() - margin - 500, top, 240, 60)
 
         draw_glossy_button(
             surface,
@@ -448,7 +597,7 @@ class SettingsScene(Scene):
                 "shadow": (45, 122, 59),
             },
             selected=False,
-            hover=self.save_rect.collidepoint(pygame.mouse.get_pos()),
+            hover=self._is_hover(self.save_rect),
             corner_radius=30,
         )
         save_label = "Opgeslagen" if not self.has_unsaved_changes else "Instellingen opslaan"
@@ -457,7 +606,7 @@ class SettingsScene(Scene):
 
         draw_glossy_button(
             surface,
-            self.back_rect,
+            self.footer_back_rect,
             {
                 "top": (216, 196, 255),
                 "bottom": (176, 148, 227),
@@ -465,11 +614,13 @@ class SettingsScene(Scene):
                 "shadow": (102, 78, 152),
             },
             selected=False,
-            hover=self.back_rect.collidepoint(pygame.mouse.get_pos()),
+            hover=self._is_hover(self.footer_back_rect),
             corner_radius=30,
         )
         back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(back_text, back_text.get_rect(center=self.back_rect.center))
+        surface.blit(back_text, back_text.get_rect(center=self.footer_back_rect.center))
+
+        return max(self.save_rect.bottom, self.footer_back_rect.bottom)
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -493,7 +644,7 @@ class SettingsScene(Scene):
             rect,
             palette,
             selected=False,
-            hover=rect.collidepoint(pygame.mouse.get_pos()),
+            hover=self._is_hover(rect),
             corner_radius=24,
         )
         text = self.option_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
@@ -512,7 +663,7 @@ class SettingsScene(Scene):
             rect,
             palette,
             selected=selected,
-            hover=rect.collidepoint(pygame.mouse.get_pos()),
+            hover=self._is_hover(rect),
             corner_radius=20,
         )
         text = self.helper_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
@@ -527,8 +678,8 @@ class SettingsScene(Scene):
         selected: Sequence[int],
     ) -> List[Tuple[pygame.Rect, int]]:
         rects: List[Tuple[pygame.Rect, int]] = []
-        cols = 5
-        button_size = (60, 48)
+        cols = self.TABLE_COLS
+        button_width, button_height = self.TABLE_BUTTON_SIZE
         spacing = 12
         base_x, base_y = origin
         selected_set = set(selected)
@@ -536,9 +687,10 @@ class SettingsScene(Scene):
             col = idx % cols
             row = idx // cols
             rect = pygame.Rect(
-                base_x + col * (button_size[0] + spacing),
-                base_y + row * (button_size[1] + spacing),
-                *button_size,
+                base_x + col * (button_width + spacing),
+                base_y + row * (button_height + spacing),
+                button_width,
+                button_height,
             )
             is_selected = value in selected_set
             palette = {
@@ -552,13 +704,22 @@ class SettingsScene(Scene):
                 rect,
                 palette,
                 selected=is_selected,
-                hover=rect.collidepoint(pygame.mouse.get_pos()),
+                hover=self._is_hover(rect),
                 corner_radius=18,
             )
             text = self.helper_font.render(str(value), True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(text, text.get_rect(center=rect.center))
             rects.append((rect, value))
         return rects
+
+    def _is_hover(self, rect: pygame.Rect) -> bool:
+        return rect.collidepoint(self.pointer_content_pos)
+
+    def _adjust_scroll(self, delta: float) -> None:
+        if self.max_scroll <= 0:
+            self.scroll_offset = 0.0
+            return
+        self.scroll_offset = max(0.0, min(self.scroll_offset + delta, self.max_scroll))
 
     def _handle_grid_click(self, position: Tuple[int, int], rects: List[Tuple[pygame.Rect, int]], values: List[int]) -> None:
         value_set = set(values)

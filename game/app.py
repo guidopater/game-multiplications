@@ -30,7 +30,7 @@ class App:
         self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
         settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT = screen_size
         settings.SCREEN_SIZE = screen_size
-        pygame.display.set_caption("Tafelheld")
+        pygame.display.set_caption("Tafelhelden")
         root = Path(__file__).resolve().parents[1]
         icon_path = root / "assets" / "images" / "icon.png"
         if icon_path.exists():

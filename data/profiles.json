@@ -10,5 +10,11 @@
     "display_name": "Julius",
     "avatar": "avatar_2.png",
     "coins": 0
+  },
+  {
+    "id": "profile_anohk",
+    "display_name": "Guido",
+    "avatar": "",
+    "coins": 0
   }
 ]

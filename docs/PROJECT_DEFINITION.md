@@ -19,7 +19,7 @@ This document captures the shared understanding of the multiplication game so fu
   - Pulls historical tests from `ScoreRepository` and spotlights tricky tables to focus on next time.
 - **Settings (`SettingsScene`)**
   - Central place for audio toggles, default practice/test voorkeuren, feedbackstijl, taalkeuze, en grote-tekstmodus.
-  - Beheert profielen (naam wijzigen, nieuw profiel, reset munten) en data-acties (export/reset).
+  - Scrollbaar ontwerp met ruime kaarten; beheert profielen (naam wijzigen, nieuw profiel, reset munten) en data-acties (export/reset).
   - Bevat een "koop een koffie"-call-to-action met uitleg over het advertentievrije, privacyvriendelijke karakter van het spel.
 - **Test Mode** (partially implemented)
   - Time-bound challenge configured in `TestSetupScene` with table selection, number of questions, and speed presets.
@@ -45,7 +45,7 @@ This document captures the shared understanding of the multiplication game so fu
 
 ## Next Architectural Steps
 - Complete the test session/summaries and persist results with richer analytics.
-- Build the leaderboard and settings scenes linked from the menu.
+- Implement localisation plumbing zodat de taalkeuze het UI-tekst daadwerkelijk wisselt.
 - Factor out shared table-selection widgets if configuration UIs start to diverge.
 - Consider a lightweight service layer for awarding coins or achievements once multiple scenes need the same logic.
 
