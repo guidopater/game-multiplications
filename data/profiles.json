@@ -3,12 +3,12 @@
     "id": "feline",
     "display_name": "Feline",
     "avatar": "avatar_feline.png",
-    "coins": 0
+    "coins": 242
   },
   {
     "id": "julius",
     "display_name": "Julius",
     "avatar": "avatar_julius.png",
-    "coins": 0
+    "coins": 140
   }
 ]

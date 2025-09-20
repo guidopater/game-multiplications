@@ -232,6 +232,180 @@
           "total_time": 62.500000000004654
         }
       }
+    },
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        1
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 30,
+      "incorrect": 0,
+      "time_limit_seconds": 480,
+      "elapsed_seconds": 39.62400000000067,
+      "timestamp": "2025-09-20T03:32:48.998964",
+      "table_stats": {
+        "1": {
+          "questions": 30.0,
+          "correct": 30.0,
+          "incorrect": 0.0,
+          "total_time": 39.62400000000067
+        }
+      }
+    },
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        3,
+        4
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 30,
+      "incorrect": 0,
+      "time_limit_seconds": 480,
+      "elapsed_seconds": 145.15299999998567,
+      "timestamp": "2025-09-20T08:57:57.257533",
+      "table_stats": {
+        "4": {
+          "questions": 17.0,
+          "correct": 17.0,
+          "incorrect": 0.0,
+          "total_time": 93.96699999998992
+        },
+        "3": {
+          "questions": 13.0,
+          "correct": 13.0,
+          "incorrect": 0.0,
+          "total_time": 51.18599999999574
+        }
+      }
+    },
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        2,
+        3,
+        10
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 30,
+      "incorrect": 0,
+      "time_limit_seconds": 480,
+      "elapsed_seconds": 133.0849999999886,
+      "timestamp": "2025-09-20T09:07:44.685776",
+      "table_stats": {
+        "10": {
+          "questions": 11.0,
+          "correct": 11.0,
+          "incorrect": 0.0,
+          "total_time": 38.36099999999961
+        },
+        "2": {
+          "questions": 9.0,
+          "correct": 9.0,
+          "incorrect": 0.0,
+          "total_time": 48.754999999991746
+        },
+        "3": {
+          "questions": 10.0,
+          "correct": 10.0,
+          "incorrect": 0.0,
+          "total_time": 45.96899999999725
+        }
+      }
+    }
+  ],
+  "julius": [
+    {
+      "profile_id": "julius",
+      "profile_name": "Julius",
+      "tables": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "question_count": 50,
+      "answered": 50,
+      "correct": 49,
+      "incorrect": 1,
+      "time_limit_seconds": 300,
+      "elapsed_seconds": 179.17799999997766,
+      "timestamp": "2025-09-20T09:01:35.100842",
+      "table_stats": {
+        "2": {
+          "questions": 11.0,
+          "correct": 11.0,
+          "incorrect": 0.0,
+          "total_time": 57.662999999991534
+        },
+        "4": {
+          "questions": 8.0,
+          "correct": 8.0,
+          "incorrect": 0.0,
+          "total_time": 33.37999999999617
+        },
+        "3": {
+          "questions": 6.0,
+          "correct": 6.0,
+          "incorrect": 0.0,
+          "total_time": 13.843999999998477
+        },
+        "9": {
+          "questions": 2.0,
+          "correct": 2.0,
+          "incorrect": 0.0,
+          "total_time": 4.181999999999505
+        },
+        "8": {
+          "questions": 5.0,
+          "correct": 5.0,
+          "incorrect": 0.0,
+          "total_time": 28.45399999999583
+        },
+        "6": {
+          "questions": 2.0,
+          "correct": 2.0,
+          "incorrect": 0.0,
+          "total_time": 6.173999999999218
+        },
+        "5": {
+          "questions": 4.0,
+          "correct": 4.0,
+          "incorrect": 0.0,
+          "total_time": 9.708999999999826
+        },
+        "7": {
+          "questions": 3.0,
+          "correct": 3.0,
+          "incorrect": 0.0,
+          "total_time": 8.812999999998745
+        },
+        "10": {
+          "questions": 3.0,
+          "correct": 2.0,
+          "incorrect": 1.0,
+          "total_time": 6.736000000000125
+        },
+        "1": {
+          "questions": 6.0,
+          "correct": 6.0,
+          "incorrect": 0.0,
+          "total_time": 10.222999999998223
+        }
+      }
     }
   ]
 }

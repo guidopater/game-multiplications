@@ -331,10 +331,12 @@ class TestSetupScene(Scene):
 
         speed = self.SPEED_OPTIONS[self.selected_speed_index]
         question_count = self.QUESTION_CHOICES[self.selected_question_index]
+        scale = question_count / self.QUESTION_CHOICES[-1]
+        time_limit = max(60, int(speed.minutes * 60 * scale))
         config = TestConfig(
             tables=sorted(self.selected_tables),
             question_count=question_count,
-            time_limit_seconds=speed.minutes * 60,
+            time_limit_seconds=time_limit,
         )
         from .test_session import TestSessionScene
 
@@ -443,6 +445,8 @@ class TestSetupScene(Scene):
         per_question = 6 + avg_table
         questions = self.QUESTION_CHOICES[self.selected_question_index]
         speed = self.SPEED_OPTIONS[self.selected_speed_index]
-        time_bonus = speed.minutes * 2
+        scale = questions / self.QUESTION_CHOICES[-1]
+        time_limit = max(60, int(speed.minutes * 60 * scale))
+        time_bonus = int((time_limit / 60) * 2)
         return int(per_question * questions + time_bonus)
         return images
