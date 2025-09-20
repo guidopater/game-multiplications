@@ -46,9 +46,13 @@ class TestSetupScene(Scene):
         self.button_font = settings.load_font(30)
         self.helper_font = settings.load_font(22)
 
-        self.selected_tables: set[int] = set(self.TABLE_VALUES)
-        self.selected_speed_index = 1  # Start met schildpad
-        self.selected_question_index = 1  # 50 vragen standaard
+        settings_defaults = getattr(self.app.settings, "default_test_tables", self.TABLE_VALUES)
+        filtered_tables = [value for value in settings_defaults if value in self.TABLE_VALUES]
+        self.selected_tables: set[int] = set(filtered_tables or self.TABLE_VALUES)
+        default_speed = getattr(self.app.settings, "default_test_speed", "Schildpad")
+        default_questions = getattr(self.app.settings, "default_test_questions", 50)
+        self.selected_speed_index = next((i for i, option in enumerate(self.SPEED_OPTIONS) if option.label == default_speed), 1)
+        self.selected_question_index = next((i for i, qty in enumerate(self.QUESTION_CHOICES) if qty == default_questions), 1)
 
         self.table_rects: List[Tuple[pygame.Rect, int]] = []
         self.speed_rects: List[Tuple[pygame.Rect, int]] = []
@@ -118,7 +122,7 @@ class TestSetupScene(Scene):
                     return
                 if event.key == pygame.K_a:
                     self.selected_tables = set(self.TABLE_VALUES)
-                if event.key == pygame.K_c:
+                if event.key == pygame.K_w:
                     self.selected_tables.clear()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -216,7 +220,7 @@ class TestSetupScene(Scene):
             self.tables_right = start_x
 
         rows = (len(self.TABLE_VALUES) + cols - 1) // cols
-        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'C' om te wissen", True, settings.COLOR_TEXT_DIM)
+        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'W' om te wissen", True, settings.COLOR_TEXT_DIM)
         hint_y = start_y + rows * (button_size[1] + spacing) + 12
         surface.blit(hint, hint.get_rect(topleft=(header_x, hint_y)))
         self.tables_bottom = hint_y + hint.get_height()

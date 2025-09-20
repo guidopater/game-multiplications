@@ -8,6 +8,7 @@ from .practice_setup import PracticeSetupScene
 from .practice_session import PracticeSessionScene
 from .practice_summary import PracticeSummaryScene
 from .progress_overview import ProgressOverviewScene
+from .settings_scene import SettingsScene
 
 __all__ = [
     "MainMenuScene",
@@ -18,4 +19,5 @@ __all__ = [
     "PracticeSessionScene",
     "PracticeSummaryScene",
     "ProgressOverviewScene",
+    "SettingsScene",
 ]

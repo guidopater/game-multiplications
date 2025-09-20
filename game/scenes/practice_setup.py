@@ -22,7 +22,8 @@ class PracticeSetupScene(Scene):
         self.option_font = settings.load_font(28)
         self.helper_font = settings.load_font(22)
 
-        self.selected_tables: set[int] = set(self.TABLE_VALUES)
+        defaults = [value for value in getattr(self.app.settings, "default_practice_tables", self.TABLE_VALUES) if value in self.TABLE_VALUES]
+        self.selected_tables: set[int] = set(defaults or self.TABLE_VALUES)
         self.table_rects: list[tuple[pygame.Rect, int]] = []
         self.start_rect: pygame.Rect | None = None
 
@@ -47,22 +48,33 @@ class PracticeSetupScene(Scene):
             "border": (191, 128, 38),
             "shadow": (160, 109, 34),
         }
+        self.back_palette = {
+            "top": (216, 196, 255),
+            "bottom": (176, 148, 227),
+            "border": (126, 98, 192),
+            "shadow": (102, 78, 152),
+        }
+        self.back_button_rect: pygame.Rect | None = None
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: list[pygame.event.Event]) -> None:
         for event in events:
+            if self.handle_back_button_event(event):
+                continue
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
+                    self._handle_back_action()
+                    return
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
-                    from .main_menu import MainMenuScene
-
-                    self.app.change_scene(MainMenuScene)
+                    self._handle_back_action()
                     return
                 if event.key == pygame.K_RETURN:
                     self._start_practice()
                     return
                 if event.key == pygame.K_a:
                     self.selected_tables = set(self.TABLE_VALUES)
-                if event.key == pygame.K_c:
+                if event.key == pygame.K_w:
                     self.selected_tables.clear()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -87,6 +99,7 @@ class PracticeSetupScene(Scene):
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+        self._draw_back_button(surface)
         self._draw_title(surface)
         self._draw_tables(surface)
         self._draw_feedback(surface)
@@ -94,10 +107,11 @@ class PracticeSetupScene(Scene):
 
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        offset = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 100)
         title = self.title_font.render("Oefenmodus", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(title, title.get_rect(topleft=(margin, margin - 30)))
+        surface.blit(title, title.get_rect(topleft=(offset, margin - 30)))
         subtitle = self.helper_font.render("Kies de tafels waarop je wilt oefenen.", True, settings.COLOR_TEXT_DIM)
-        surface.blit(subtitle, subtitle.get_rect(topleft=(margin + 4, margin + 24)))
+        surface.blit(subtitle, subtitle.get_rect(topleft=(offset + 4, margin + 24)))
 
     def _draw_tables(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
@@ -134,7 +148,7 @@ class PracticeSetupScene(Scene):
             surface.blit(label, label.get_rect(center=face_rect.center))
             self.table_rects.append((rect, value))
 
-        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'C' om te wissen", True, settings.COLOR_TEXT_DIM)
+        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'W' om te wissen", True, settings.COLOR_TEXT_DIM)
         surface.blit(hint, hint.get_rect(topleft=(margin, start_y + 3 * (button_size[1] + spacing) + 12)))
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
@@ -173,3 +187,30 @@ class PracticeSetupScene(Scene):
         from .practice_session import PracticeSessionScene
 
         self.app.change_scene(PracticeSessionScene, config=config)
+
+    def _handle_back_action(self) -> None:
+        self.on_back()
+
+    def on_back(self) -> None:
+        from .main_menu import MainMenuScene
+
+        self.app.change_scene(MainMenuScene)
+
+    def _draw_back_button(self, surface: pygame.Surface) -> None:
+        margin = settings.SCREEN_MARGIN
+        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        padding_x = 32
+        padding_y = 18
+        width = text.get_width() + padding_x * 2
+        height = text.get_height() + padding_y * 2
+        rect = pygame.Rect(margin, margin + 6, width, height)
+        face_rect = draw_glossy_button(
+            surface,
+            rect,
+            self.back_palette,
+            selected=False,
+            hover=rect.collidepoint(pygame.mouse.get_pos()),
+            corner_radius=28,
+        )
+        surface.blit(text, text.get_rect(center=face_rect.center))
+        self.back_button_rect = rect

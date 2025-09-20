@@ -169,10 +169,9 @@ class ProgressOverviewScene(Scene):
         if not self.recent_results:
             self._draw_empty_state(surface)
         else:
-            self._draw_recent_highlight(surface)
-            self._draw_trend_cards(surface)
+            self._draw_top_row(surface)
+            self._draw_trend_card(surface)
             self._draw_history(surface)
-        self._draw_leaderboard(surface)
         self._draw_buttons(surface)
 
     def _draw_header(self, surface: pygame.Surface) -> None:
@@ -208,30 +207,40 @@ class ProgressOverviewScene(Scene):
             surface.blit(text_surface, text_surface.get_rect(center=(card.centerx, y)))
             y += 34
 
-    def _draw_recent_highlight(self, surface: pygame.Surface) -> None:
+    def _draw_top_row(self, surface: pygame.Surface) -> None:
         assert self.latest_result is not None
         margin = settings.SCREEN_MARGIN
-        width = surface.get_width() * 0.52
-        card = pygame.Rect(margin, margin + 110, int(width), 220)
+        top_offset = margin + 110
+        row_height = 220
+        half_width = (surface.get_width() - margin * 3) // 2
+
+        left_card = pygame.Rect(margin, top_offset, half_width, row_height)
+        right_card = pygame.Rect(margin * 2 + half_width, top_offset, half_width, row_height)
+
+        self._draw_recent_highlight(surface, left_card)
+        self._draw_leaderboard(surface, right_card)
+
+    def _draw_recent_highlight(self, surface: pygame.Surface, card: pygame.Rect) -> None:
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=32)
 
         heading = self.section_font.render("Laatste test", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + 32, card.top + 28)))
 
-        timestamp = self.latest_result.timestamp.strftime("%d %b %Y, %H:%M")
-        tables = ", ".join(str(n) for n in self.latest_result.tables) or "-"
-        accuracy = f"{self.latest_result.accuracy * 100:.0f}%"
-        duration = self._format_duration(self.latest_result.elapsed_seconds)
-        remaining = self.latest_result.remaining_seconds
-        remaining_text = self._format_duration(remaining)
+        assert self.latest_result is not None
+        latest = self.latest_result
+        timestamp = latest.timestamp.strftime("%d %b %Y, %H:%M")
+        tables = ", ".join(str(n) for n in latest.tables) or "-"
+        accuracy = f"{latest.accuracy * 100:.0f}%"
+        duration = self._format_duration(latest.elapsed_seconds)
+        remaining = self._format_duration(latest.remaining_seconds)
 
         stats = [
             ("Tafels", tables),
             ("Nauwkeurigheid", accuracy),
-            ("Beantwoord", f"{self.latest_result.answered}/{self.latest_result.question_count}"),
+            ("Beantwoord", f"{latest.answered}/{latest.question_count}"),
             ("Gebruikte tijd", duration),
-            ("Over", remaining_text),
+            ("Over", remaining),
         ]
 
         info_x = card.left + 32
@@ -247,13 +256,15 @@ class ProgressOverviewScene(Scene):
             surface.blit(value_surface, (info_x + 180, info_y - 6))
             info_y += 48
 
-    def _draw_trend_cards(self, surface: pygame.Surface) -> None:
+    def _draw_trend_card(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        base_x = margin
-        base_y = margin + 350
-        card_width = int(surface.get_width() * 0.52)
-        card_height = 150
-        card = pygame.Rect(base_x, base_y, card_width, card_height)
+        top_offset = margin + 110 + 220 + margin // 2
+        card = pygame.Rect(
+            margin,
+            top_offset,
+            surface.get_width() - margin * 2,
+            170,
+        )
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=28)
 
@@ -280,7 +291,7 @@ class ProgressOverviewScene(Scene):
 
         if self.tricky_tables:
             hint = self.small_font.render("Focus tafels:", True, settings.COLOR_TEXT_DIM)
-            surface.blit(hint, (card.left + card_width - 210, card.top + 24))
+            surface.blit(hint, (card.right - 210, card.top + 24))
             ty = card.top + 56
             for table, incorrect, avg_time in self.tricky_tables:
                 text = self.small_font.render(
@@ -288,13 +299,19 @@ class ProgressOverviewScene(Scene):
                     True,
                     settings.COLOR_TEXT_PRIMARY,
                 )
-                surface.blit(text, (card.left + card_width - 210, ty))
+                surface.blit(text, (card.right - 210, ty))
                 ty += 26
 
     def _draw_history(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        width = int(surface.get_width() * 0.52)
-        card = pygame.Rect(margin, surface.get_height() - margin - 220, width, 200)
+        top_offset = margin + 110 + 220 + margin // 2 + 170 + margin // 2
+        available_height = surface.get_height() - top_offset - margin - 120
+        card = pygame.Rect(
+            margin,
+            top_offset,
+            surface.get_width() - margin * 2,
+            max(160, available_height),
+        )
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=28)
 
@@ -316,13 +333,13 @@ class ProgressOverviewScene(Scene):
             surface.blit(line, (card.left + 28, y))
             y += 32
 
-    def _draw_leaderboard(self, surface: pygame.Surface) -> None:
-        margin = settings.SCREEN_MARGIN
-        base_x = surface.get_width() * 0.58
-        top = margin + 110
-        width = surface.get_width() - base_x - margin
-        height = surface.get_height() - margin * 2 - 140
-        card = pygame.Rect(int(base_x), int(top), int(width), int(height))
+    def _draw_leaderboard(self, surface: pygame.Surface, card: pygame.Rect | None = None) -> None:
+        if card is None:
+            margin = settings.SCREEN_MARGIN
+            top_offset = margin + 110
+            width = surface.get_width() - margin * 2
+            height = surface.get_height() - margin * 2 - 140
+            card = pygame.Rect(margin, top_offset, width, height)
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=32)
 
@@ -368,12 +385,14 @@ class ProgressOverviewScene(Scene):
     def _draw_buttons(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         bottom = surface.get_height() - margin - 90
+        total_width = 700
         right = surface.get_width() - margin
+        start_x = right - total_width
 
         configs = [
+            ("Start nieuwe test", pygame.Rect(start_x, bottom, 240, 78)),
+            ("Ga oefenen", pygame.Rect(start_x + 260, bottom, 220, 78)),
             ("Terug", pygame.Rect(right - 220, bottom, 220, 78)),
-            ("Ga oefenen", pygame.Rect(right - 460, bottom, 220, 78)),
-            ("Start nieuwe test", pygame.Rect(right - 700, bottom, 240, 78)),
         ]
 
         mouse_pos = pygame.mouse.get_pos()
@@ -431,4 +450,3 @@ class ProgressOverviewScene(Scene):
 
 
 __all__ = ["ProgressOverviewScene"]
-

@@ -17,6 +17,10 @@ This document captures the shared understanding of the multiplication game so fu
 - **Progress Overview**
   - "Hoe deed je het?" opens `ProgressOverviewScene` with the latest test highlight, friendly trends, and a leaderboard comparing profiles.
   - Pulls historical tests from `ScoreRepository` and spotlights tricky tables to focus on next time.
+- **Settings (`SettingsScene`)**
+  - Central place for audio toggles, default practice/test voorkeuren, feedbackstijl, taalkeuze, en grote-tekstmodus.
+  - Beheert profielen (naam wijzigen, nieuw profiel, reset munten) en data-acties (export/reset).
+  - Bevat een "koop een koffie"-call-to-action met uitleg over het advertentievrije, privacyvriendelijke karakter van het spel.
 - **Test Mode** (partially implemented)
   - Time-bound challenge configured in `TestSetupScene` with table selection, number of questions, and speed presets.
   - Results will feed coins and the leaderboard through `ScoreRepository`.

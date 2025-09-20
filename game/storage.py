@@ -37,3 +37,15 @@ class ScoreRepository:
 
     def get_test_results(self, profile_id: str) -> List[dict]:
         return list(self._data.get(profile_id, []))
+
+    def all_scores(self) -> Dict[str, List[dict]]:
+        return json.loads(json.dumps(self._data))
+
+    def clear_profile(self, profile_id: str) -> None:
+        if profile_id in self._data:
+            del self._data[profile_id]
+            self.save()
+
+    def clear_all(self) -> None:
+        self._data = {}
+        self.save()

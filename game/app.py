@@ -9,9 +9,10 @@ from typing import List, Type
 import pygame
 
 from . import settings
-from .models import PlayerProfile
+from .models import PlayerProfile, GameSettings
 from .scenes.base import Scene
 from .scenes.main_menu import MainMenuScene
+from .preferences import SettingsStore
 from .storage import ScoreRepository
 
 
@@ -46,11 +47,13 @@ class App:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.scores = ScoreRepository(self.data_dir / "scores.json")
+        self.settings_store = SettingsStore(self.data_dir / "settings.json")
+        self.settings: GameSettings = self.settings_store.load()
         self.profiles = self._load_profiles()
         if not self.profiles:
             self.profiles = [
-                PlayerProfile("feline", "Feline", "avatar_feline.png", coins=0),
-                PlayerProfile("julius", "Julius", "avatar_julius.png", coins=0),
+                PlayerProfile("feline", "Feline", "avatar_1.png", coins=0),
+                PlayerProfile("julius", "Julius", "avatar_2.png", coins=0),
             ]
             self.save_profiles()
         self.active_profile_index = 0
@@ -66,6 +69,8 @@ class App:
         self.coin_icon = self._load_coin_icon(self.assets_dir / "images" / "coin.png")
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         self._load_sounds()
+        if pygame.mixer.get_init():
+            pygame.mixer.music.set_volume(1.0 if self.settings.music_enabled else 0.0)
         self._apply_profile_style(self.active_profile.identifier)
         self.save_profiles()
 
@@ -147,9 +152,17 @@ class App:
                     continue
 
     def play_sound(self, key: str) -> None:
+        if not self.settings.effects_enabled:
+            return
         sound = self.sounds.get(key)
         if sound:
             sound.play()
+
+    def toggle_music(self, enabled: bool) -> None:
+        self.settings.music_enabled = enabled
+        if pygame.mixer.get_init():
+            pygame.mixer.music.set_volume(1.0 if enabled else 0.0)
+        self.save_settings()
 
     def adjust_active_coins(self, delta: int) -> int:
         profile = self.active_profile
@@ -157,6 +170,9 @@ class App:
         self.profiles[self.active_profile_index] = profile
         self.save_profiles()
         return profile.coins
+
+    def save_settings(self) -> None:
+        self.settings_store.save(self.settings)
 
     def _load_coin_icon(self, path: Path) -> pygame.Surface | None:
         if not path.exists():

@@ -321,6 +321,10 @@ class MainMenuScene(Scene):
             from .test_setup import TestSetupScene
 
             self.app.change_scene(TestSetupScene)
+        elif option.action == "settings":
+            from .settings_scene import SettingsScene
+
+            self.app.change_scene(SettingsScene)
         elif option.action == "leaderboard":
             from .progress_overview import ProgressOverviewScene
 
