@@ -125,6 +125,113 @@
           "total_time": 53.971000000003144
         }
       }
+    },
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 28,
+      "incorrect": 2,
+      "time_limit_seconds": 480,
+      "elapsed_seconds": 86.95999999999948,
+      "timestamp": "2025-09-20T02:57:11.104053",
+      "table_stats": {
+        "1": {
+          "questions": 4.0,
+          "correct": 4.0,
+          "incorrect": 0.0,
+          "total_time": 6.447000000000102
+        },
+        "4": {
+          "questions": 5.0,
+          "correct": 5.0,
+          "incorrect": 0.0,
+          "total_time": 16.84899999999807
+        },
+        "10": {
+          "questions": 2.0,
+          "correct": 2.0,
+          "incorrect": 0.0,
+          "total_time": 3.757999999999811
+        },
+        "9": {
+          "questions": 2.0,
+          "correct": 1.0,
+          "incorrect": 1.0,
+          "total_time": 9.840000000000265
+        },
+        "8": {
+          "questions": 5.0,
+          "correct": 4.0,
+          "incorrect": 1.0,
+          "total_time": 25.715000000000906
+        },
+        "3": {
+          "questions": 5.0,
+          "correct": 5.0,
+          "incorrect": 0.0,
+          "total_time": 11.646000000000186
+        },
+        "6": {
+          "questions": 3.0,
+          "correct": 3.0,
+          "incorrect": 0.0,
+          "total_time": 4.252000000000173
+        },
+        "5": {
+          "questions": 2.0,
+          "correct": 2.0,
+          "incorrect": 0.0,
+          "total_time": 4.01400000000006
+        },
+        "7": {
+          "questions": 1.0,
+          "correct": 1.0,
+          "incorrect": 0.0,
+          "total_time": 2.348000000000411
+        },
+        "2": {
+          "questions": 1.0,
+          "correct": 1.0,
+          "incorrect": 0.0,
+          "total_time": 2.0909999999994966
+        }
+      }
+    },
+    {
+      "profile_id": "feline",
+      "profile_name": "Feline",
+      "tables": [
+        10
+      ],
+      "question_count": 30,
+      "answered": 30,
+      "correct": 30,
+      "incorrect": 0,
+      "time_limit_seconds": 480,
+      "elapsed_seconds": 62.500000000004654,
+      "timestamp": "2025-09-20T03:07:54.769488",
+      "table_stats": {
+        "10": {
+          "questions": 30.0,
+          "correct": 30.0,
+          "incorrect": 0.0,
+          "total_time": 62.500000000004654
+        }
+      }
     }
   ]
 }

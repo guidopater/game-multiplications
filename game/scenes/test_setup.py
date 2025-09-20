@@ -174,7 +174,8 @@ class TestSetupScene(Scene):
         margin = settings.SCREEN_MARGIN
         header_x = margin + 30
         header_y = margin + 120
-        header = self.section_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
+        header_font = settings.load_title_font(38)
+        header = header_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(header_x, header_y)))
         self.table_header_top = header_y
 
@@ -223,7 +224,8 @@ class TestSetupScene(Scene):
     def _draw_speed(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         header_y = self.tables_bottom + 40
-        header = self.section_font.render("Hoe snel ga je?", True, settings.COLOR_ACCENT_LIGHT)
+        header_font = settings.load_title_font(38)
+        header = header_font.render("Hoe snel ga je?", True, settings.COLOR_ACCENT_LIGHT)
         header_pos = header.get_rect(topleft=(margin + 30, header_y))
         surface.blit(header, header_pos)
         self.speed_rects = []
@@ -273,7 +275,8 @@ class TestSetupScene(Scene):
         spacing = 22
         base_x = self.tables_right + 80
         header_top = getattr(self, "table_header_top", self.tables_bottom)
-        header = self.section_font.render("Hoeveel sommen", True, settings.COLOR_ACCENT_LIGHT)
+        header_font = settings.load_title_font(38)
+        header = header_font.render("Hoeveel sommen", True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(base_x, header_top)))
         base_y = header_top + 60
         self.question_rects = []

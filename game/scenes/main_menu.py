@@ -125,8 +125,6 @@ class MainMenuScene(Scene):
                 profile = next((p for p in self.app.profiles if p.identifier == profile_id), None)
                 if profile:
                     self.app.set_active_profile(profile)
-                    self.feedback_message = f"Hoi {profile.display_name}!"
-                    self.feedback_timer = 1.8
                 return True
         return False
 
@@ -245,15 +243,16 @@ class MainMenuScene(Scene):
             name_rect = name_surface.get_rect(midtop=(rect.centerx, rect.bottom + 6))
             surface.blit(name_surface, name_rect)
 
+            coin_y = name_rect.bottom + 10
             if self.app.coin_icon:
-                coin_rect = self.app.coin_icon.get_rect(midtop=(rect.centerx - 20, name_rect.bottom + 6))
-                surface.blit(self.app.coin_icon, coin_rect)
+                icon_rect = self.app.coin_icon.get_rect(midtop=(rect.centerx - 20, coin_y))
+                surface.blit(self.app.coin_icon, icon_rect)
                 coin_text = self.profile_font.render(str(profile.coins), True, name_color)
-                coin_text_rect = coin_text.get_rect(midtop=(coin_rect.centerx + 24, name_rect.bottom + 8))
+                coin_text_rect = coin_text.get_rect(midleft=(icon_rect.right + 6, icon_rect.centery))
                 surface.blit(coin_text, coin_text_rect)
             else:
-                coin_text = self.profile_font.render(f"{profile.coins}", True, name_color)
-                surface.blit(coin_text, coin_text.get_rect(midtop=(rect.centerx, name_rect.bottom + 6)))
+                coin_text = self.profile_font.render(str(profile.coins), True, name_color)
+                surface.blit(coin_text, coin_text.get_rect(midtop=(rect.centerx, coin_y)))
 
             self.profile_rects.append((rect, profile.identifier))
 
