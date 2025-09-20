@@ -35,6 +35,11 @@ class TestConfig:
 
 
 @dataclass
+class PracticeConfig:
+    tables: List[int]
+
+
+@dataclass
 class TestResult:
     profile_id: str
     profile_name: str

@@ -313,6 +313,10 @@ class MainMenuScene(Scene):
         option = self.options[index]
         if option.action == "quit":
             self.app.running = False
+        elif option.action == "practice":
+            from .practice_setup import PracticeSetupScene
+
+            self.app.change_scene(PracticeSetupScene)
         elif option.action == "test":
             from .test_setup import TestSetupScene
 
