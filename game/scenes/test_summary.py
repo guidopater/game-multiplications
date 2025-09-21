@@ -7,7 +7,7 @@ from typing import Iterable, List, Sequence, Tuple, TYPE_CHECKING
 import pygame
 
 from .. import settings
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 from ..models import TestConfig, TestResult
 from .base import Scene
 
@@ -44,7 +44,7 @@ class TestSummaryScene(Scene):
         self.helper_font = settings.load_font(24)
         self.button_font = settings.load_font(30)
 
-        self.buttons: List[Tuple[str, pygame.Rect]] = []
+        self.buttons: List[Button] = []
         self.show_back_button = False
         self.back_button_rect: pygame.Rect | None = None
         self.back_palette = {
@@ -75,6 +75,9 @@ class TestSummaryScene(Scene):
                 if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
                     self._handle_back_action()
                     return
+                for button in self.buttons:
+                    if button.handle_event(event):
+                        return
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     self._restart_test()
@@ -82,16 +85,6 @@ class TestSummaryScene(Scene):
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
                     self._handle_back_action()
                     return
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for label, rect in self.buttons:
-                    if rect.collidepoint(event.pos):
-                        if label == "Terug naar menu":
-                            from .main_menu import MainMenuScene
-
-                            self.app.change_scene(MainMenuScene)
-                        else:
-                            self._restart_test()
-                        return
 
     def update(self, delta_time: float) -> None:
         # No dynamic state to update.
@@ -186,30 +179,31 @@ class TestSummaryScene(Scene):
             y += 32
 
     def _draw_buttons(self, surface: pygame.Surface) -> None:
-        self.buttons = []
         margin = settings.SCREEN_MARGIN
         retry_rect = pygame.Rect(surface.get_width() - margin - 300, surface.get_height() - margin - 86, 300, 86)
         menu_rect = pygame.Rect(surface.get_width() - margin - 620, surface.get_height() - margin - 86, 300, 86)
         mouse_pos = pygame.mouse.get_pos()
-        mouse_pos = pygame.mouse.get_pos()
 
-        info = [
-            ("Nog een keer!", retry_rect, self.button_palettes["Nog een keer!"]),
-            ("Terug naar menu", menu_rect, self.button_palettes["Terug naar menu"]),
-        ]
-
-        for label, rect, palette in info:
-            face_rect = draw_glossy_button(
-                surface,
-                rect,
-            palette,
-            selected=False,
-            hover=rect.collidepoint(mouse_pos),
-            corner_radius=32,
+        retry_button = Button(
+            retry_rect,
+            "Nog een keer!",
+            self.button_font,
+            self.button_palettes["Nog een keer!"],
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._restart_test,
         )
-            text = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(center=face_rect.center))
-            self.buttons.append((label, rect))
+        menu_button = Button(
+            menu_rect,
+            "Terug naar menu",
+            self.button_font,
+            self.button_palettes["Terug naar menu"],
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._handle_back_action_wrapper,
+        )
+
+        self.buttons = [retry_button, menu_button]
+        for button in self.buttons:
+            button.render(surface, hover=button.rect.collidepoint(mouse_pos))
 
     def _restart_test(self) -> None:
         from .test_session import TestSessionScene

@@ -8,7 +8,7 @@ import pygame
 
 from .. import settings
 from ..models import PracticeConfig  # for type hints
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 from .base import Scene
 
 
@@ -42,7 +42,7 @@ class PracticeSummaryScene(Scene):
         self.helper_font = settings.load_font(24)
         self.button_font = settings.load_font(30)
 
-        self.buttons: List[Tuple[str, pygame.Rect]] = []
+        self.buttons: List[Button] = []
         self.back_palette = {
             "top": (216, 196, 255),
             "bottom": (176, 148, 227),
@@ -72,6 +72,9 @@ class PracticeSummaryScene(Scene):
                 if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
                     self._handle_back_action()
                     return
+                for button in self.buttons:
+                    if button.handle_event(event):
+                        return
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     self._restart_practice()
@@ -79,14 +82,6 @@ class PracticeSummaryScene(Scene):
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
                     self._handle_back_action()
                     return
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for label, rect in self.buttons:
-                    if rect.collidepoint(event.pos):
-                        if label == "Terug naar menu":
-                            self._handle_back_action()
-                        else:
-                            self._restart_practice()
-                        return
 
     def update(self, delta_time: float) -> None:
         return
@@ -193,27 +188,31 @@ class PracticeSummaryScene(Scene):
             y += 32
 
     def _draw_buttons(self, surface: pygame.Surface) -> None:
-        self.buttons = []
         margin = settings.SCREEN_MARGIN
+        mouse_pos = pygame.mouse.get_pos()
         retry_rect = pygame.Rect(surface.get_width() - margin - 300, surface.get_height() - margin - 86, 300, 86)
         menu_rect = pygame.Rect(surface.get_width() - margin - 620, surface.get_height() - margin - 86, 300, 86)
-        mouse_pos = pygame.mouse.get_pos()
 
-        for label, rect, palette in [
-            ("Nog een keer!", retry_rect, self.button_palettes["Nog een keer!"]),
-            ("Terug naar menu", menu_rect, self.button_palettes["Terug naar menu"]),
-        ]:
-            face_rect = draw_glossy_button(
-                surface,
-                rect,
-                palette,
-                selected=False,
-                hover=rect.collidepoint(mouse_pos),
-                corner_radius=32,
-            )
-            text = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(center=face_rect.center))
-            self.buttons.append((label, rect))
+        retry_button = Button(
+            retry_rect,
+            "Nog een keer!",
+            self.button_font,
+            self.button_palettes["Nog een keer!"],
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._restart_practice,
+        )
+        menu_button = Button(
+            menu_rect,
+            "Terug naar menu",
+            self.button_font,
+            self.button_palettes["Terug naar menu"],
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._handle_back_action,
+        )
+
+        self.buttons = [retry_button, menu_button]
+        for button in self.buttons:
+            button.render(surface, hover=button.rect.collidepoint(mouse_pos))
 
     def _restart_practice(self) -> None:
         if self.config is not None:

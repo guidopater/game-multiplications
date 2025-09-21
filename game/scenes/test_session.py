@@ -11,7 +11,7 @@ from typing import List, Sequence, Tuple
 import pygame
 
 from .. import settings
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 from ..models import TestConfig, TestResult
 from .base import Scene
 
@@ -68,13 +68,21 @@ class TestSessionScene(Scene):
             settings.SCREEN_MARGIN + 20,
         )
         self.show_back_button = False
-        self.back_button_rect: pygame.Rect | None = None
+
         self.back_palette = {
             "top": (216, 196, 255),
             "bottom": (176, 148, 227),
             "border": (126, 98, 192),
             "shadow": (102, 78, 152),
         }
+        self.back_button = Button(
+            pygame.Rect(0, 0, 140, 52),
+            "Stop",
+            self.helper_font,
+            self.back_palette,
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self.on_back,
+        )
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: Sequence[pygame.event.Event]) -> None:
@@ -83,8 +91,7 @@ class TestSessionScene(Scene):
 
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
-                    self.on_back()
+                if self.back_button.handle_event(event):
                     return
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -377,7 +384,6 @@ class TestSessionScene(Scene):
             corner_radius=28,
         )
         surface.blit(text, text.get_rect(center=face_rect.center))
-        self.back_button_rect = rect
 
     def _question_center(self) -> tuple[int, int]:
         rect = self.app.screen.get_rect()

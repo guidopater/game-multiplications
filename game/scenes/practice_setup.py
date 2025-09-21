@@ -7,7 +7,7 @@ import pygame
 from .. import settings
 from ..models import PracticeConfig
 from .base import Scene
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 
 
 class PracticeSetupScene(Scene):
@@ -25,7 +25,6 @@ class PracticeSetupScene(Scene):
         defaults = [value for value in getattr(self.app.settings, "default_practice_tables", self.TABLE_VALUES) if value in self.TABLE_VALUES]
         self.selected_tables: set[int] = set(defaults or self.TABLE_VALUES)
         self.table_rects: list[tuple[pygame.Rect, int]] = []
-        self.start_rect: pygame.Rect | None = None
 
         self.feedback_message = ""
         self.feedback_timer = 0.0
@@ -48,6 +47,14 @@ class PracticeSetupScene(Scene):
             "border": (191, 128, 38),
             "shadow": (160, 109, 34),
         }
+        self.start_button = Button(
+            pygame.Rect(0, 0, 260, 86),
+            "Start oefenen",
+            self.option_font,
+            self.start_palette,
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._start_practice,
+        )
         self.back_palette = {
             "top": (216, 196, 255),
             "bottom": (176, 148, 227),
@@ -78,8 +85,7 @@ class PracticeSetupScene(Scene):
                     self.selected_tables.clear()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.start_rect and self.start_rect.collidepoint(event.pos):
-                    self._start_practice()
+                if self.start_button.handle_event(event):
                     return
                 for rect, value in self.table_rects:
                     if rect.collidepoint(event.pos):
@@ -165,17 +171,8 @@ class PracticeSetupScene(Scene):
         width = 260
         height = 86
         rect = pygame.Rect(surface.get_width() - margin - width, surface.get_height() - margin - height, width, height)
-        face_rect = draw_glossy_button(
-            surface,
-            rect,
-            self.start_palette,
-            selected=False,
-            hover=rect.collidepoint(pygame.mouse.get_pos()),
-            corner_radius=32,
-        )
-        text = self.option_font.render("Start oefenen", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(text, text.get_rect(center=face_rect.center))
-        self.start_rect = rect
+        self.start_button.set_rect(rect)
+        self.start_button.render(surface, hover=rect.collidepoint(pygame.mouse.get_pos()))
 
     def _start_practice(self) -> None:
         if not self.selected_tables:

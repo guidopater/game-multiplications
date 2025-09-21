@@ -8,7 +8,7 @@ from typing import List, Sequence, Tuple
 import pygame
 
 from .. import settings
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 
 try:
     import numpy as np
@@ -57,7 +57,6 @@ class TestSetupScene(Scene):
         self.table_rects: List[Tuple[pygame.Rect, int]] = []
         self.speed_rects: List[Tuple[pygame.Rect, int]] = []
         self.question_rects: List[Tuple[pygame.Rect, int]] = []
-        self.start_rect: pygame.Rect | None = None
         self.level_images = self._load_level_images()
 
         self.feedback_message = ""
@@ -95,6 +94,14 @@ class TestSetupScene(Scene):
             "border": (191, 128, 38),
             "shadow": (160, 109, 34),
         }
+        self.start_button = Button(
+            pygame.Rect(0, 0, 260, 86),
+            "Start!",
+            self.button_font,
+            self.palette_start,
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self._start_test,
+        )
         self.palette_back = {
             "top": (216, 196, 255),
             "bottom": (176, 148, 227),
@@ -126,8 +133,7 @@ class TestSetupScene(Scene):
                     self.selected_tables.clear()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.start_rect and self.start_rect.collidepoint(event.pos):
-                    self._start_test()
+                if self.start_button.handle_event(event):
                     return
                 for rect, value in self.table_rects:
                     if rect.collidepoint(event.pos):
@@ -303,20 +309,11 @@ class TestSetupScene(Scene):
         base_x = getattr(self, "question_column_x", surface.get_width() - margin - width)
         rect = pygame.Rect(base_x, surface.get_height() - margin - height, width, height)
         hover = rect.collidepoint(pygame.mouse.get_pos())
-        face_rect = draw_glossy_button(
-            surface,
-            rect,
-            self.palette_start,
-            selected=False,
-            hover=hover,
-            corner_radius=32,
-        )
+        self.start_button.set_rect(rect)
+        self.start_button.render(surface, hover=hover)
         estimate = self._estimate_max_reward()
         estimate_text = self.helper_font.render(f"Te verdienen: {estimate} munten", True, settings.COLOR_TEXT_DIM)
-        surface.blit(estimate_text, estimate_text.get_rect(center=(face_rect.centerx, face_rect.top - 24)))
-        text = self.button_font.render("Start!", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(text, text.get_rect(center=face_rect.center))
-        self.start_rect = rect
+        surface.blit(estimate_text, estimate_text.get_rect(center=(rect.centerx, rect.top - 24)))
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:

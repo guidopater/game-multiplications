@@ -11,7 +11,7 @@ import pygame
 
 from .. import settings
 from ..models import PracticeConfig
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 from .base import Scene
 
 
@@ -68,7 +68,14 @@ class PracticeSessionScene(Scene):
             "border": (126, 98, 192),
             "shadow": (102, 78, 152),
         }
-        self.back_button_rect: pygame.Rect | None = None
+        self.back_button = Button(
+            pygame.Rect(0, 0, 160, 52),
+            "Stoppen",
+            self.helper_font,
+            self.back_palette,
+            text_color=settings.COLOR_TEXT_PRIMARY,
+            callback=self.on_back,
+        )
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: Sequence[pygame.event.Event]) -> None:
@@ -167,16 +174,8 @@ class PracticeSessionScene(Scene):
         width = text.get_width() + padding_x * 2
         height = text.get_height() + padding_y * 2
         rect = pygame.Rect(margin, margin + 6, width, height)
-        face_rect = draw_glossy_button(
-            surface,
-            rect,
-            self.back_palette,
-            selected=False,
-            hover=rect.collidepoint(pygame.mouse.get_pos()),
-            corner_radius=28,
-        )
-        surface.blit(text, text.get_rect(center=face_rect.center))
-        self.back_button_rect = rect
+        self.back_button.set_rect(rect)
+        self.back_button.render(surface, hover=rect.collidepoint(pygame.mouse.get_pos()))
 
     def _question_center(self) -> tuple[int, int]:
         rect = self.app.screen.get_rect()
