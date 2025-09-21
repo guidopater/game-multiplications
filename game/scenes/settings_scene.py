@@ -33,6 +33,7 @@ class SettingsScene(Scene):
     QUESTION_CHOICES: Sequence[int] = (30, 50, 100)
     TABLE_COLS: int = 5
     TABLE_BUTTON_SIZE: Tuple[int, int] = (60, 48)
+    BUTTON_HEIGHT: int = 52
 
     def __init__(self, app: "App") -> None:
         super().__init__(app)
@@ -345,22 +346,24 @@ class SettingsScene(Scene):
         )
 
         self.speed_rects = {}
-        right_column_x = card.left + inner + grid_width + self.section_spacing * 3
+        column_gap = self.section_spacing * 3
+        right_column_x = card.left + inner + grid_width + column_gap
         speed_title = self.option_font.render("Snelheid", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(speed_title, speed_title.get_rect(topleft=(right_column_x, column_top)))
         speed_button_top = speed_title.get_rect().bottom + self.grid_spacing
+        speed_button_width = 180
         for index, label in enumerate(self.SPEED_LABELS):
-            rect = pygame.Rect(right_column_x, speed_button_top + index * 52, 170, 44)
+            rect = pygame.Rect(right_column_x, speed_button_top + index * self.BUTTON_HEIGHT, speed_button_width, self.BUTTON_HEIGHT - 8)
             selected = self.settings.default_test_speed == label
             self.speed_rects[label] = self._draw_small_button(surface, rect, label, selected)
 
         questions_title = self.option_font.render("Aantal vragen", True, settings.COLOR_TEXT_PRIMARY)
-        questions_x = right_column_x + 200
+        questions_x = right_column_x + speed_button_width + self.section_spacing
         surface.blit(questions_title, questions_title.get_rect(topleft=(questions_x, column_top)))
         questions_button_top = questions_title.get_rect().bottom + self.grid_spacing
         self.question_rects = {}
         for index, quantity in enumerate(self.QUESTION_CHOICES):
-            rect = pygame.Rect(questions_x, questions_button_top + index * 52, 170, 44)
+            rect = pygame.Rect(questions_x, questions_button_top + index * self.BUTTON_HEIGHT, 170, self.BUTTON_HEIGHT - 8)
             selected = self.settings.default_test_questions == quantity
             self.question_rects[quantity] = self._draw_small_button(surface, rect, str(quantity), selected)
 
@@ -369,55 +372,52 @@ class SettingsScene(Scene):
     def _draw_feedback_language_card(self, surface: pygame.Surface, top: int) -> int:
         inner = self.card_inner_margin
         heading_h = self.section_font.get_height()
-        label_h = self.option_font.get_height()
-        feedback_row_height = 50
-        language_row_height = label_h + self.grid_spacing + 44
-        large_text_row_height = label_h + self.grid_spacing + 44
-        total_height = int(
-            inner * 2
-            + heading_h
-            + self.section_spacing
-            + feedback_row_height
-            + self.section_spacing
-            + language_row_height
-            + self.section_spacing
-            + large_text_row_height
-        )
-        card = self._draw_card(surface, top, total_height)
-        heading = self.section_font.render("Feedback & taal", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
+        label_width = 220
+        button_height = 48
+        row_gap = self.section_spacing
 
+        content_height = heading_h + row_gap + button_height + row_gap + button_height + row_gap + button_height
+        card = self._draw_card(surface, top, int(inner * 2 + content_height))
+
+        label_x = card.left + inner
+        value_x = label_x + label_width
+        row_top = card.top + inner
+
+        heading = self.section_font.render("Feedback & taal", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(heading, heading.get_rect(topleft=(label_x, row_top)))
+        row_top += heading_h + row_gap
+
+        hints_label = self.option_font.render("Hints", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(hints_label, hints_label.get_rect(topleft=(label_x, row_top)))
         self.feedback_option_rects = {}
-        feedback_top = card.top + inner + heading_h + self.section_spacing
-        x = card.left + inner
+        x = value_x
         for option, label in self.FEEDBACK_OPTIONS:
-            rect = pygame.Rect(x, feedback_top, 200, 50)
+            rect = pygame.Rect(x, row_top - 4, 200, button_height)
             selected = self.settings.feedback_style == option
             self.feedback_option_rects[option] = self._draw_small_button(surface, rect, label, selected)
             x += rect.width + self.section_spacing
+        row_top += button_height + row_gap
 
-        language_title = self.option_font.render("Taal", True, settings.COLOR_TEXT_PRIMARY)
-        language_top = feedback_top + feedback_row_height + self.section_spacing
-        surface.blit(language_title, language_title.get_rect(topleft=(card.left + inner, language_top)))
+        language_label = self.option_font.render("Taal", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(language_label, language_label.get_rect(topleft=(label_x, row_top)))
         self.language_rects = {}
-        lx = card.left + inner + language_title.get_width() + self.section_spacing
+        x = value_x
         for code, label in self.LANGUAGE_OPTIONS:
-            rect = pygame.Rect(lx, language_top - 4, 180, 44)
+            rect = pygame.Rect(x, row_top - 4, 180, 44)
             selected = self.settings.language == code
             self.language_rects[code] = self._draw_small_button(surface, rect, label, selected)
-            lx += rect.width + self.section_spacing
+            x += rect.width + self.section_spacing
+        row_top += button_height + row_gap
 
-        large_text_title = self.option_font.render("Grote tekst", True, settings.COLOR_TEXT_PRIMARY)
-        large_text_top = language_top + label_h + self.section_spacing
-        surface.blit(large_text_title, large_text_title.get_rect(topleft=(card.left + inner, large_text_top)))
+        large_text_label = self.option_font.render("Grote tekst", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(large_text_label, large_text_label.get_rect(topleft=(label_x, row_top)))
         self.large_text_toggle_rect = self._draw_toggle(
             surface,
-            card.left + inner + large_text_title.get_width() + self.section_spacing,
-            large_text_top - 4,
+            value_x,
+            row_top - 4,
             "Aan",
             self.settings.large_text,
         )
-
         return card.bottom
 
     def _draw_profile_card(self, surface: pygame.Surface, top: int) -> int:
@@ -486,62 +486,53 @@ class SettingsScene(Scene):
     def _draw_data_card(self, surface: pygame.Surface, top: int) -> int:
         inner = self.card_inner_margin
         heading_h = self.section_font.get_height()
-        total_height = int(inner * 2 + heading_h + self.section_spacing + 56 + self.grid_spacing + self.helper_font.get_height() + 6)
-        card = self._draw_card(surface, top, total_height)
+        button_width = 260
+        button_height = 52
+        row_gap = self.section_spacing
+
+        rows = [
+            ("export_scores", "Exporteer scores", "Slaat alle testresultaten op als JSON-bestand."),
+            ("reset_scores", "Reset scores actief profiel", "Verwijdert alleen resultaten van het gekozen profiel."),
+            ("reset_all", "Complete reset", "Wist alle profielen en scores permanent."),
+        ]
+        content_height = heading_h + row_gap + len(rows) * (button_height + row_gap) + self.helper_font.get_height()
+        card = self._draw_card(surface, top, int(inner * 2 + content_height))
+
         heading = self.section_font.render("Data & privacy", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
-        self.data_button_rects = self._data_buttons(card, inner)
-        palettes = {
-            "export_scores": {
-                "top": (84, 188, 255),
-                "bottom": (31, 117, 232),
-                "border": (27, 86, 182),
-                "shadow": (21, 73, 152),
-            },
-            "reset_scores": {
-                "top": (244, 110, 34),
-                "bottom": (214, 78, 20),
-                "border": (172, 58, 18),
-                "shadow": (138, 44, 18),
-            },
-            "reset_all": {
-                "top": (255, 131, 131),
-                "bottom": (220, 70, 70),
-                "border": (168, 48, 48),
-                "shadow": (140, 36, 36),
-            },
-        }
-        labels = {
-            "export_scores": "Exporteer scores",
-            "reset_scores": "Reset scores actief profiel",
-            "reset_all": "Complete reset",
-        }
-        for key, rect in self.data_button_rects.items():
+        row_top = card.top + inner + heading_h + row_gap
+        description_color = settings.COLOR_TEXT_PRIMARY
+        self.data_button_rects = {}
+
+        for key, label, description in rows:
+            rect = pygame.Rect(card.left + inner, row_top, button_width, button_height)
+            self.data_button_rects[key] = rect
+            palette = {
+                "export_scores": {"top": (84, 188, 255), "bottom": (31, 117, 232), "border": (27, 86, 182), "shadow": (21, 73, 152)},
+                "reset_scores": {"top": (244, 110, 34), "bottom": (214, 78, 20), "border": (172, 58, 18), "shadow": (138, 44, 18)},
+                "reset_all": {"top": (255, 131, 131), "bottom": (220, 70, 70), "border": (168, 48, 48), "shadow": (140, 36, 36)},
+            }[key]
             draw_glossy_button(
                 surface,
                 rect,
-                palettes[key],
+                palette,
                 selected=False,
                 hover=self._is_hover(rect),
                 corner_radius=24,
             )
-            text = self.button_font.render(labels[key], True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(center=rect.center))
+            text_surface = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
+            surface.blit(text_surface, text_surface.get_rect(center=rect.center))
+
+            description_surface = self.helper_font.render(description, True, description_color)
+            desc_rect = description_surface.get_rect(topleft=(rect.right + self.section_spacing, rect.centery - description_surface.get_height() // 2))
+            surface.blit(description_surface, desc_rect)
+
+            row_top += button_height + row_gap
 
         info = self.helper_font.render("Let op: resets vragen geen bevestiging, gebruik ze bewust!", True, settings.COLOR_TEXT_DIM)
-        info_top = self.data_button_rects["reset_all"].bottom + self.grid_spacing
-        surface.blit(info, info.get_rect(topleft=(card.left + inner, info_top)))
+        surface.blit(info, info.get_rect(topleft=(card.left + inner, row_top)))
         return card.bottom
-
-    def _data_buttons(self, card: pygame.Rect, inner: int) -> Dict[str, pygame.Rect]:
-        base_x = card.left + inner
-        base_y = card.top + inner + self.section_font.get_height() + self.section_spacing
-        return {
-            "export_scores": pygame.Rect(base_x, base_y, 220, 56),
-            "reset_scores": pygame.Rect(base_x + 240, base_y, 280, 56),
-            "reset_all": pygame.Rect(base_x + 540, base_y, 240, 56),
-        }
 
     def _draw_support_card(self, surface: pygame.Surface, top: int) -> int:
         inner = self.card_inner_margin
@@ -549,13 +540,15 @@ class SettingsScene(Scene):
         line_height = self.helper_font.get_height()
         total_height = int(inner * 2 + heading_h + self.section_spacing + 3 * (line_height + 6) + self.section_spacing + 56)
         card = self._draw_card(surface, top, total_height)
-        heading = self.section_font.render("Dankjewel!", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render("Voor de mama's, papa's, verzorgers en onderwijzers!", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         lines = [
             "Dit spel is gemaakt om kinderen spelenderwijs tafels te oefenen.",
-            "Geen advertenties, geen tracking – gewoon vrolijk leren.",
-            "Vind je het waardevol? Trakteer ons dan op een kop koffie!",
+            "Geïnspireerd het totaal geen zin hebben om tafels te oefenen van mijn dochter.",
+            "Ik wilde graag een spelletje opzetten voor haar waarbij leren wordt beloond en er weinig afleiding is.",
+            "Belangrijker nog: geen advertenties, geen tracking, maar gewoon vrolijk en simpel leren."
+            "Vind je het waardevol? Vertel het vooral door! Echt heel blij? Dan mag je me altijd trakteren op een koffie ;)"
         ]
         y = card.top + inner + heading_h + self.grid_spacing
         for line in lines:
