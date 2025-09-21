@@ -10,7 +10,9 @@
 
 ## Profiles & Progress
 - [ ] Add avatar selectie en favoriete tafels per profiel.
+- [ ] On game startup, when there is no profile, we want to welcome the user and let them easily create a first profile. The target audience are kids between 6-10, so we want to make it as easy as just asking for their firstname and let them select a avatar.
 - [x] Provide a way to reset profiles and scores from within the UI.
+
 
 ## Localization
 - [ ] Introduce multi-language support (strings scheiden, NL/EN toggle toepassen).
@@ -19,6 +21,7 @@
 ## Polish & Future Ideas
 - [ ] Consider syncing coins/profiles across devices.
 - [ ] Add unlockable themes or rewards purchasable with coins.
-- [ ] Move 'back'-button on leaderboard to top-left corner, move title a bit to the right
+- [x] Move 'back'-button on leaderboard to top-left corner, move title a bit to the right
 - [ ] Make leaderboard page also scrollable like 'settings'
 - [ ] Settings screen must be improved
+

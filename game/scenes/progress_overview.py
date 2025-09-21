@@ -42,6 +42,7 @@ class ProgressOverviewScene(Scene):
         self.recent_results: List[TestResult] = []
         self.latest_result: TestResult | None = None
         self.tricky_tables: List[tuple[int, float, float]] = []
+        self.top_back_rect: pygame.Rect | None = None
 
         self._load_data()
 
@@ -165,6 +166,7 @@ class ProgressOverviewScene(Scene):
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+        self.buttons = []
         self._draw_header(surface)
         if not self.recent_results:
             self._draw_empty_state(surface)
@@ -176,12 +178,32 @@ class ProgressOverviewScene(Scene):
 
     def _draw_header(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
+        back_rect = pygame.Rect(margin, margin - 6, 160, 48)
+        palette = {
+            "top": (216, 196, 255),
+            "bottom": (176, 148, 227),
+            "border": (126, 98, 192),
+            "shadow": (102, 78, 152),
+        }
+        draw_glossy_button(
+            surface,
+            back_rect,
+            palette,
+            selected=False,
+            hover=back_rect.collidepoint(pygame.mouse.get_pos()),
+            corner_radius=24,
+        )
+        back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(back_text, back_text.get_rect(center=back_rect.center))
+        self.top_back_rect = back_rect
+
+        offset = back_rect.right + 24
         profile = self.app.active_profile
         title = self.title_font.render(f"Hoe deed je het, {profile.display_name}?", True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(title, title.get_rect(topleft=(margin, margin - 20)))
+        surface.blit(title, title.get_rect(topleft=(offset, margin - 20)))
 
         subtitle = self.body_font.render("Bekijk je voortgang en vergelijk met de rest van het team!", True, settings.COLOR_TEXT_DIM)
-        surface.blit(subtitle, subtitle.get_rect(topleft=(margin + 6, margin + 34)))
+        surface.blit(subtitle, subtitle.get_rect(topleft=(offset + 6, margin + 34)))
 
     def _draw_empty_state(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
@@ -392,11 +414,12 @@ class ProgressOverviewScene(Scene):
         configs = [
             ("Start nieuwe test", pygame.Rect(start_x, bottom, 240, 78)),
             ("Ga oefenen", pygame.Rect(start_x + 260, bottom, 220, 78)),
-            ("Terug", pygame.Rect(right - 220, bottom, 220, 78)),
         ]
 
         mouse_pos = pygame.mouse.get_pos()
         self.buttons = []
+        if self.top_back_rect is not None:
+            self.buttons.append(("Terug", self.top_back_rect))
         for label, rect in configs:
             face = draw_glossy_button(
                 surface,
@@ -409,6 +432,31 @@ class ProgressOverviewScene(Scene):
             text_surface = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(text_surface, text_surface.get_rect(center=face.center))
             self.buttons.append((label, rect))
+
+        if self.top_back_rect is not None:
+            back_face = draw_glossy_button(
+                surface,
+                self.top_back_rect,
+                self.button_palettes["Terug"],
+                selected=False,
+                hover=self.top_back_rect.collidepoint(mouse_pos),
+                corner_radius=24,
+            )
+            back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+            surface.blit(back_text, back_text.get_rect(center=back_face.center))
+
+        # redraw fixed back button with proper palette
+        back_label, back_rect = self.buttons[0]
+        back_face = draw_glossy_button(
+            surface,
+            back_rect,
+            self.button_palettes["Terug"],
+            selected=False,
+            hover=back_rect.collidepoint(mouse_pos),
+            corner_radius=24,
+        )
+        back_text = self.button_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(back_text, back_text.get_rect(center=back_face.center))
 
     # Helpers --------------------------------------------------------
     def _average_accuracy(self, results: Sequence[TestResult]) -> float:
