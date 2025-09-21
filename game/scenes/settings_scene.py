@@ -19,15 +19,9 @@ from .base import Scene
 class SettingsScene(Scene):
     """Interactive settings dashboard for the multiplication game."""
 
-    LANGUAGE_OPTIONS: Sequence[Tuple[str, str]] = (
-        ("nl", "Nederlands"),
-        ("en", "English"),
-    )
+    LANGUAGE_OPTIONS: Sequence[str] = ("nl", "en")
 
-    FEEDBACK_OPTIONS: Sequence[Tuple[str, str]] = (
-        ("warm", "Warme hints"),
-        ("compact", "Korte hints"),
-    )
+    FEEDBACK_OPTIONS: Sequence[str] = ("warm", "compact")
 
     SPEED_LABELS: Sequence[str] = ("Slak", "Schildpad", "Haas", "Cheeta")
     QUESTION_CHOICES: Sequence[int] = (30, 50, 100)
@@ -237,9 +231,11 @@ class SettingsScene(Scene):
     def _draw_header(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         back_right = (self.back_top_rect.right + 24) if self.back_top_rect else margin
-        title = self.title_font.render("Instellingen", True, settings.COLOR_TEXT_PRIMARY)
+        title_text = self.tr("settings.title", default="Instellingen")
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(back_right, margin - 20)))
-        subtitle = self.helper_font.render("Pas het spel aan op jouw gezin.", True, settings.COLOR_TEXT_DIM)
+        subtitle_text = self.tr("settings.subtitle", default="Pas het spel aan op jouw gezin.")
+        subtitle = self.helper_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, subtitle.get_rect(topleft=(back_right + 6, margin + 24)))
 
     def _draw_card(self, surface: pygame.Surface, top: int, height: int) -> pygame.Rect:
@@ -266,7 +262,8 @@ class SettingsScene(Scene):
             hover=rect.collidepoint(pygame.mouse.get_pos()),
             corner_radius=24,
         )
-        label = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        label_text = self.tr("common.back", default="Terug")
+        label = self.button_font.render(label_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(label, label.get_rect(center=rect.center))
         self.back_top_rect = rect
 
@@ -276,7 +273,8 @@ class SettingsScene(Scene):
         toggle_height = 48
         total_height = int(inner * 2 + heading_h + self.section_spacing + toggle_height)
         card = self._draw_card(surface, top, total_height)
-        heading = self.section_font.render("Geluid", True, settings.COLOR_TEXT_PRIMARY)
+        heading_text = self.tr("settings.sections.audio", default="Geluid")
+        heading = self.section_font.render(heading_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         toggle_y = card.top + inner + heading_h + self.section_spacing
@@ -284,14 +282,14 @@ class SettingsScene(Scene):
             surface,
             card.left + inner,
             toggle_y,
-            "Muziek",
+            self.tr("settings.audio.music", default="Muziek"),
             self.settings.music_enabled,
         )
         self.effects_toggle_rect = self._draw_toggle(
             surface,
             self.music_toggle_rect.right + self.section_spacing,
             toggle_y,
-            "Effecten",
+            self.tr("settings.audio.effects", default="Effecten"),
             self.settings.effects_enabled,
         )
         return card.bottom
@@ -322,11 +320,16 @@ class SettingsScene(Scene):
         total_height = int(inner * 2 + max(left_height, right_height))
         card = self._draw_card(surface, top, total_height)
 
-        heading = self.section_font.render("Standaard instellingen", True, settings.COLOR_TEXT_PRIMARY)
+        heading_text = self.tr("settings.sections.defaults", default="Standaard instellingen")
+        heading = self.section_font.render(heading_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         column_top = card.top + inner + heading_h + self.section_spacing
-        practice_title = self.option_font.render("Oefenen tafels", True, settings.COLOR_TEXT_PRIMARY)
+        practice_title = self.option_font.render(
+            self.tr("settings.defaults.practice_tables", default="Oefenen tafels"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(practice_title, practice_title.get_rect(topleft=(card.left + inner, column_top)))
         practice_grid_top = practice_title.get_rect().bottom + self.grid_spacing
         self.practice_table_rects = self._draw_table_grid(
@@ -336,7 +339,11 @@ class SettingsScene(Scene):
         )
 
         test_title_top = practice_grid_top + grid_height + self.section_spacing
-        test_title = self.option_font.render("Test tafels", True, settings.COLOR_TEXT_PRIMARY)
+        test_title = self.option_font.render(
+            self.tr("settings.defaults.test_tables", default="Test tafels"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(test_title, test_title.get_rect(topleft=(card.left + inner, test_title_top)))
         test_grid_top = test_title.get_rect().bottom + self.grid_spacing
         self.test_table_rects = self._draw_table_grid(
@@ -348,16 +355,28 @@ class SettingsScene(Scene):
         self.speed_rects = {}
         column_gap = self.section_spacing * 3
         right_column_x = card.left + inner + grid_width + column_gap
-        speed_title = self.option_font.render("Snelheid", True, settings.COLOR_TEXT_PRIMARY)
+        speed_title = self.option_font.render(
+            self.tr("settings.defaults.speed", default="Snelheid"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(speed_title, speed_title.get_rect(topleft=(right_column_x, column_top)))
         speed_button_top = speed_title.get_rect().bottom + self.grid_spacing
         speed_button_width = 180
         for index, label in enumerate(self.SPEED_LABELS):
             rect = pygame.Rect(right_column_x, speed_button_top + index * self.BUTTON_HEIGHT, speed_button_width, self.BUTTON_HEIGHT - 8)
             selected = self.settings.default_test_speed == label
-            self.speed_rects[label] = self._draw_small_button(surface, rect, label, selected)
+            display = self.tr(
+                f"test_setup.speed.{label}.label",
+                default=label,
+            )
+            self.speed_rects[label] = self._draw_small_button(surface, rect, display, selected)
 
-        questions_title = self.option_font.render("Aantal vragen", True, settings.COLOR_TEXT_PRIMARY)
+        questions_title = self.option_font.render(
+            self.tr("settings.defaults.questions", default="Aantal vragen"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         questions_x = right_column_x + speed_button_width + self.section_spacing
         surface.blit(questions_title, questions_title.get_rect(topleft=(questions_x, column_top)))
         questions_button_top = questions_title.get_rect().bottom + self.grid_spacing
@@ -383,39 +402,69 @@ class SettingsScene(Scene):
         value_x = label_x + label_width
         row_top = card.top + inner
 
-        heading = self.section_font.render("Feedback & taal", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("settings.sections.feedback", default="Feedback & taal"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(label_x, row_top)))
         row_top += heading_h + row_gap
 
-        hints_label = self.option_font.render("Hints", True, settings.COLOR_TEXT_PRIMARY)
+        hints_label = self.option_font.render(
+            self.tr("settings.feedback.hints", default="Hints"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(hints_label, hints_label.get_rect(topleft=(label_x, row_top)))
         self.feedback_option_rects = {}
         x = value_x
-        for option, label in self.FEEDBACK_OPTIONS:
+        for option in self.FEEDBACK_OPTIONS:
             rect = pygame.Rect(x, row_top - 4, 200, button_height)
             selected = self.settings.feedback_style == option
-            self.feedback_option_rects[option] = self._draw_small_button(surface, rect, label, selected)
+            label_text = self.tr(
+                f"settings.feedback.options.{option}",
+                default={
+                    "warm": "Warme hints",
+                    "compact": "Korte hints",
+                }[option],
+            )
+            self.feedback_option_rects[option] = self._draw_small_button(surface, rect, label_text, selected)
             x += rect.width + self.section_spacing
         row_top += button_height + row_gap
 
-        language_label = self.option_font.render("Taal", True, settings.COLOR_TEXT_PRIMARY)
+        language_label = self.option_font.render(
+            self.tr("settings.feedback.language", default="Taal"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(language_label, language_label.get_rect(topleft=(label_x, row_top)))
         self.language_rects = {}
         x = value_x
-        for code, label in self.LANGUAGE_OPTIONS:
+        for code in self.LANGUAGE_OPTIONS:
             rect = pygame.Rect(x, row_top - 4, 180, 44)
             selected = self.settings.language == code
-            self.language_rects[code] = self._draw_small_button(surface, rect, label, selected)
+            label_text = self.tr(
+                f"settings.feedback.languages.{code}",
+                default={
+                    "nl": "Nederlands",
+                    "en": "English",
+                }[code],
+            )
+            self.language_rects[code] = self._draw_small_button(surface, rect, label_text, selected)
             x += rect.width + self.section_spacing
         row_top += button_height + row_gap
 
-        large_text_label = self.option_font.render("Grote tekst", True, settings.COLOR_TEXT_PRIMARY)
+        large_text_label = self.option_font.render(
+            self.tr("settings.feedback.large_text", default="Grote tekst"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(large_text_label, large_text_label.get_rect(topleft=(label_x, row_top)))
         self.large_text_toggle_rect = self._draw_toggle(
             surface,
             value_x,
             row_top - 4,
-            "Aan",
+            self.tr("common.toggle.on", default="Aan"),
             self.settings.large_text,
         )
         return card.bottom
@@ -436,10 +485,18 @@ class SettingsScene(Scene):
             + self.grid_spacing
         )
         card = self._draw_card(surface, top, total_height)
-        heading = self.section_font.render("Profielen", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("settings.sections.profiles", default="Profielen"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
-        name_label = self.option_font.render("Naam actief profiel", True, settings.COLOR_TEXT_PRIMARY)
+        name_label = self.option_font.render(
+            self.tr("settings.profiles.active_name", default="Naam actief profiel"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         name_top = card.top + inner + heading.get_height() + self.section_spacing
         surface.blit(name_label, name_label.get_rect(topleft=(card.left + inner, name_top)))
 
@@ -463,10 +520,30 @@ class SettingsScene(Scene):
         }
         button_row_top = input_rect.bottom + self.section_spacing
         specs = [
-            ("save_name", card.left + inner, button_row_top, "Bewaar naam"),
-            ("new_profile", card.left + inner + 220, button_row_top, "Nieuw profiel"),
-            ("reset_coins", card.left + inner, button_row_top + 64, "Reset munten"),
-            ("delete_profile", card.left + inner + 220, button_row_top + 64, "Verwijder profiel"),
+            (
+                "save_name",
+                card.left + inner,
+                button_row_top,
+                self.tr("settings.profiles.buttons.save_name", default="Bewaar naam"),
+            ),
+            (
+                "new_profile",
+                card.left + inner + 220,
+                button_row_top,
+                self.tr("settings.profiles.buttons.new_profile", default="Nieuw profiel"),
+            ),
+            (
+                "reset_coins",
+                card.left + inner,
+                button_row_top + 64,
+                self.tr("settings.profiles.buttons.reset_coins", default="Reset munten"),
+            ),
+            (
+                "delete_profile",
+                card.left + inner + 220,
+                button_row_top + 64,
+                self.tr("settings.profiles.buttons.delete_profile", default="Verwijder profiel"),
+            ),
         ]
         for key, x, y, label in specs:
             rect = pygame.Rect(x, y, 200, 52)
@@ -491,14 +568,39 @@ class SettingsScene(Scene):
         row_gap = self.section_spacing
 
         rows = [
-            ("export_scores", "Exporteer scores", "Slaat alle testresultaten op als JSON-bestand."),
-            ("reset_scores", "Reset scores actief profiel", "Verwijdert alleen resultaten van het gekozen profiel."),
-            ("reset_all", "Complete reset", "Wist alle profielen en scores permanent."),
+            (
+                "export_scores",
+                self.tr("settings.data.buttons.export_scores.label", default="Exporteer scores"),
+                self.tr(
+                    "settings.data.buttons.export_scores.description",
+                    default="Slaat alle testresultaten op als JSON-bestand.",
+                ),
+            ),
+            (
+                "reset_scores",
+                self.tr("settings.data.buttons.reset_scores.label", default="Reset scores actief profiel"),
+                self.tr(
+                    "settings.data.buttons.reset_scores.description",
+                    default="Verwijdert alleen resultaten van het gekozen profiel.",
+                ),
+            ),
+            (
+                "reset_all",
+                self.tr("settings.data.buttons.reset_all.label", default="Complete reset"),
+                self.tr(
+                    "settings.data.buttons.reset_all.description",
+                    default="Wist alle profielen en scores permanent.",
+                ),
+            ),
         ]
         content_height = heading_h + row_gap + len(rows) * (button_height + row_gap) + self.helper_font.get_height()
         card = self._draw_card(surface, top, int(inner * 2 + content_height))
 
-        heading = self.section_font.render("Data & privacy", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("settings.sections.data", default="Data & privacy"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         row_top = card.top + inner + heading_h + row_gap
@@ -530,26 +632,43 @@ class SettingsScene(Scene):
 
             row_top += button_height + row_gap
 
-        info = self.helper_font.render("Let op: resets vragen geen bevestiging, gebruik ze bewust!", True, settings.COLOR_TEXT_DIM)
+        info = self.helper_font.render(
+            self.tr(
+                "settings.data.warning",
+                default="Let op: resets vragen geen bevestiging, gebruik ze bewust!",
+            ),
+            True,
+            settings.COLOR_TEXT_DIM,
+        )
         surface.blit(info, info.get_rect(topleft=(card.left + inner, row_top)))
         return card.bottom
 
     def _draw_support_card(self, surface: pygame.Surface, top: int) -> int:
         inner = self.card_inner_margin
         heading_h = self.section_font.get_height()
+        lines = self.tr_list(
+            "settings.support.lines",
+            default=[
+                "Dit spel is gemaakt om kinderen spelenderwijs tafels te oefenen.",
+                "Geïnspireerd het totaal geen zin hebben om tafels te oefenen van mijn dochter.",
+                "Ik wilde graag een spelletje opzetten voor haar waarbij leren wordt beloond en er weinig afleiding is.",
+                "Belangrijker nog: geen advertenties, geen tracking, maar gewoon vrolijk en simpel leren.",
+                "Vind je het waardevol? Vertel het vooral door! Echt heel blij? Dan mag je me altijd trakteren op een koffie ;)",
+            ],
+        )
         line_height = self.helper_font.get_height()
-        total_height = int(inner * 2 + heading_h + self.section_spacing + 3 * (line_height + 6) + self.section_spacing + 56)
+        total_height = int(inner * 2 + heading_h + self.section_spacing + len(lines) * (line_height + 6) + self.section_spacing + 56)
         card = self._draw_card(surface, top, total_height)
-        heading = self.section_font.render("Voor de mama's, papa's, verzorgers en onderwijzers!", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr(
+                "settings.support.heading",
+                default="Voor de mama's, papa's, verzorgers en onderwijzers!",
+            ),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
-        lines = [
-            "Dit spel is gemaakt om kinderen spelenderwijs tafels te oefenen.",
-            "Geïnspireerd het totaal geen zin hebben om tafels te oefenen van mijn dochter.",
-            "Ik wilde graag een spelletje opzetten voor haar waarbij leren wordt beloond en er weinig afleiding is.",
-            "Belangrijker nog: geen advertenties, geen tracking, maar gewoon vrolijk en simpel leren."
-            "Vind je het waardevol? Vertel het vooral door! Echt heel blij? Dan mag je me altijd trakteren op een koffie ;)"
-        ]
         y = card.top + inner + heading_h + self.grid_spacing
         for line in lines:
             text = self.helper_font.render(line, True, settings.COLOR_TEXT_PRIMARY)
@@ -570,7 +689,11 @@ class SettingsScene(Scene):
             hover=self._is_hover(self.buy_rect),
             corner_radius=28,
         )
-        label = self.button_font.render("Koop een koffie", True, settings.COLOR_TEXT_PRIMARY)
+        label = self.button_font.render(
+            self.tr("settings.support.cta", default="Koop een koffie"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(label, label.get_rect(center=self.buy_rect.center))
 
         return card.bottom
@@ -593,7 +716,10 @@ class SettingsScene(Scene):
             hover=self._is_hover(self.save_rect),
             corner_radius=30,
         )
-        save_label = "Opgeslagen" if not self.has_unsaved_changes else "Instellingen opslaan"
+        save_label = self.tr(
+            "settings.save.saved" if not self.has_unsaved_changes else "settings.save.save_changes",
+            default="Opgeslagen" if not self.has_unsaved_changes else "Instellingen opslaan",
+        )
         save_text = self.button_font.render(save_label, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(save_text, save_text.get_rect(center=self.save_rect.center))
 
@@ -610,7 +736,11 @@ class SettingsScene(Scene):
             hover=self._is_hover(self.footer_back_rect),
             corner_radius=30,
         )
-        back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_text = self.button_font.render(
+            self.tr("common.back", default="Terug"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(back_text, back_text.get_rect(center=self.footer_back_rect.center))
 
         return max(self.save_rect.bottom, self.footer_back_rect.bottom)
@@ -739,12 +869,18 @@ class SettingsScene(Scene):
         if action == "reset_coins":
             self.app.active_profile.coins = 0
             self.app.save_profiles()
-            self.feedback_message = "Munten teruggezet naar 0."
+            self.feedback_message = self.tr(
+                "settings.profiles.messages.coins_reset",
+                default="Munten teruggezet naar 0.",
+            )
             self.feedback_timer = 3.0
             return
         if action == "delete_profile":
             if len(self.app.profiles) <= 1:
-                self.feedback_message = "Je hebt minimaal één profiel nodig."
+                self.feedback_message = self.tr(
+                    "settings.profiles.messages.needs_one",
+                    default="Je hebt minimaal één profiel nodig.",
+                )
                 self.feedback_timer = 3.0
                 return
             profile = self.app.active_profile
@@ -754,12 +890,19 @@ class SettingsScene(Scene):
             self.app.save_profiles()
             self.app.scores.clear_profile(profile.identifier)
             self.name_buffer = self.app.active_profile.display_name
-            self.feedback_message = "Profiel verwijderd."
+            self.feedback_message = self.tr(
+                "settings.profiles.messages.profile_deleted",
+                default="Profiel verwijderd.",
+            )
             self.feedback_timer = 3.0
 
     def _create_profile(self) -> None:
         identifier = self._generate_profile_id()
-        display_name = f"Speler {len(self.app.profiles) + 1}"
+        display_name = self.tr(
+            "settings.profiles.default_name",
+            default="Speler {number}",
+            number=len(self.app.profiles) + 1,
+        )
         from ..models import PlayerProfile
 
         profile = PlayerProfile(identifier, display_name, "", coins=0)
@@ -768,7 +911,10 @@ class SettingsScene(Scene):
         self.app.active_profile = profile
         self.app.save_profiles()
         self.name_buffer = display_name
-        self.feedback_message = "Nieuw profiel aangemaakt."
+        self.feedback_message = self.tr(
+            "settings.profiles.messages.profile_created",
+            default="Nieuw profiel aangemaakt.",
+        )
         self.feedback_timer = 3.0
 
     def _generate_profile_id(self) -> str:
@@ -783,12 +929,18 @@ class SettingsScene(Scene):
             self._export_scores()
         elif action == "reset_scores":
             self.app.scores.clear_profile(self.app.active_profile.identifier)
-            self.feedback_message = "Scores van dit profiel gewist."
+            self.feedback_message = self.tr(
+                "settings.data.messages.reset_scores",
+                default="Scores van dit profiel gewist.",
+            )
             self.feedback_timer = 3.0
         elif action == "reset_all":
             self.app.scores.clear_all()
             self.app.save_profiles()
-            self.feedback_message = "Alle data gewist."
+            self.feedback_message = self.tr(
+                "settings.data.messages.reset_all",
+                default="Alle data gewist.",
+            )
             self.feedback_timer = 3.0
 
     def _export_scores(self) -> None:
@@ -797,19 +949,29 @@ class SettingsScene(Scene):
         path = export_dir / f"scores_export_{timestamp}.json"
         export_dir.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(self.app.scores.all_scores(), indent=2), encoding="utf-8")
-        self.feedback_message = f"Scores opgeslagen naar {path.name}."
+        self.feedback_message = self.tr(
+            "settings.data.messages.exported",
+            default="Scores opgeslagen naar {filename}.",
+            filename=path.name,
+        )
         self.feedback_timer = 3.0
 
     def _apply_name_change(self) -> None:
         new_name = self.name_buffer.strip()
         if not new_name:
-            self.feedback_message = "Naam mag niet leeg zijn."
+            self.feedback_message = self.tr(
+                "settings.profiles.messages.name_empty",
+                default="Naam mag niet leeg zijn.",
+            )
             self.feedback_timer = 3.0
             self.name_buffer = self.app.active_profile.display_name
             return
         self.app.active_profile.display_name = new_name
         self.app.save_profiles()
-        self.feedback_message = "Naam opgeslagen."
+        self.feedback_message = self.tr(
+            "settings.profiles.messages.name_saved",
+            default="Naam opgeslagen.",
+        )
         self.feedback_timer = 3.0
 
     def _handle_back(self) -> None:
@@ -823,11 +985,17 @@ class SettingsScene(Scene):
         self.app.settings = self.settings.clone()
         self.app.save_settings()
         self.has_unsaved_changes = False
-        self.feedback_message = "Instellingen opgeslagen."
+        self.feedback_message = self.tr(
+            "settings.save.confirmation",
+            default="Instellingen opgeslagen.",
+        )
         self.feedback_timer = 3.0
 
     def _show_support_message(self) -> None:
-        self.feedback_message = "Bedankt! Koffielink volgt binnenkort."
+        self.feedback_message = self.tr(
+            "settings.support.thank_you",
+            default="Bedankt! Koffielink volgt binnenkort.",
+        )
         self.feedback_timer = 3.0
 
     def update(self, delta_time: float) -> None:

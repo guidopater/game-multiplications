@@ -47,24 +47,35 @@ class ProgressOverviewScene(Scene):
         self._load_data()
 
         self.button_palettes = {
-            "Start nieuwe test": {
+            "start_test": {
                 "top": (255, 170, 59),
                 "bottom": (244, 110, 34),
                 "border": (172, 78, 23),
                 "shadow": (138, 62, 19),
             },
-            "Ga oefenen": {
+            "go_practice": {
                 "top": (84, 188, 255),
                 "bottom": (31, 117, 232),
                 "border": (27, 86, 182),
                 "shadow": (21, 73, 152),
             },
-            "Terug": {
+            "back": {
                 "top": (216, 196, 255),
                 "bottom": (176, 148, 227),
                 "border": (126, 98, 192),
                 "shadow": (102, 78, 152),
             },
+        }
+        self.action_labels = {
+            "start_test": self.tr(
+                "progress_overview.actions.start_test",
+                default="Start nieuwe test",
+            ),
+            "go_practice": self.tr(
+                "progress_overview.actions.go_practice",
+                default="Ga oefenen",
+            ),
+            "back": self.tr("progress_overview.actions.back", default=self.tr("common.back", default="Terug")),
         }
 
     def _load_data(self) -> None:
@@ -135,9 +146,9 @@ class ProgressOverviewScene(Scene):
     def handle_events(self, events: Iterable[pygame.event.Event]) -> None:
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for label, rect in self.buttons:
+                for action, rect in self.buttons:
                     if rect.collidepoint(event.pos):
-                        self._handle_button(label)
+                        self._handle_button(action)
                         return
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
@@ -146,15 +157,15 @@ class ProgressOverviewScene(Scene):
                     self.app.change_scene(MainMenuScene)
                     return
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self._handle_button("Start nieuwe test")
+                    self._handle_button("start_test")
                     return
 
-    def _handle_button(self, label: str) -> None:
-        if label == "Start nieuwe test":
+    def _handle_button(self, action: str) -> None:
+        if action == "start_test":
             from .test_setup import TestSetupScene
 
             self.app.change_scene(TestSetupScene)
-        elif label == "Ga oefenen":
+        elif action == "go_practice":
             from .practice_setup import PracticeSetupScene
 
             self.app.change_scene(PracticeSetupScene)
@@ -165,6 +176,7 @@ class ProgressOverviewScene(Scene):
 
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
+        self._refresh_action_labels()
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
         self.buttons = []
         self._draw_header(surface)
@@ -173,8 +185,22 @@ class ProgressOverviewScene(Scene):
         else:
             self._draw_top_row(surface)
             self._draw_trend_card(surface)
-            self._draw_history(surface)
+        self._draw_history(surface)
         self._draw_buttons(surface)
+
+    def _refresh_action_labels(self) -> None:
+        self.action_labels["start_test"] = self.tr(
+            "progress_overview.actions.start_test",
+            default="Start nieuwe test",
+        )
+        self.action_labels["go_practice"] = self.tr(
+            "progress_overview.actions.go_practice",
+            default="Ga oefenen",
+        )
+        self.action_labels["back"] = self.tr(
+            "progress_overview.actions.back",
+            default=self.tr("common.back", default="Terug"),
+        )
 
     def _draw_header(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
@@ -193,16 +219,26 @@ class ProgressOverviewScene(Scene):
             hover=back_rect.collidepoint(pygame.mouse.get_pos()),
             corner_radius=24,
         )
-        back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_label = self.action_labels["back"]
+        back_text = self.button_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(back_text, back_text.get_rect(center=back_rect.center))
         self.top_back_rect = back_rect
 
         offset = back_rect.right + 24
         profile = self.app.active_profile
-        title = self.title_font.render(f"Hoe deed je het, {profile.display_name}?", True, settings.COLOR_TEXT_PRIMARY)
+        title_text = self.tr(
+            "progress_overview.title",
+            default="Hoe deed je het, {name}?",
+            name=profile.display_name,
+        )
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(offset, margin - 20)))
 
-        subtitle = self.body_font.render("Bekijk je voortgang en vergelijk met de rest van het team!", True, settings.COLOR_TEXT_DIM)
+        subtitle_text = self.tr(
+            "progress_overview.subtitle",
+            default="Bekijk je voortgang en vergelijk met de rest van het team!",
+        )
+        subtitle = self.body_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, subtitle.get_rect(topleft=(offset + 6, margin + 34)))
 
     def _draw_empty_state(self, surface: pygame.Surface) -> None:
@@ -216,13 +252,20 @@ class ProgressOverviewScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=32)
 
-        heading = self.section_font.render("Nog geen tests", True, settings.COLOR_TEXT_PRIMARY)
+        heading_text = self.tr(
+            "progress_overview.empty.heading",
+            default="Nog geen tests",
+        )
+        heading = self.section_font.render(heading_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(center=(card.centerx, card.top + 70)))
 
-        message_lines = [
-            "Je hebt nog geen test gedaan.",
-            "Start een nieuwe test om je vooruitgang bij te houden!",
-        ]
+        message_lines = self.tr_list(
+            "progress_overview.empty.lines",
+            default=[
+                "Je hebt nog geen test gedaan.",
+                "Start een nieuwe test om je vooruitgang bij te houden!",
+            ],
+        )
         y = card.top + 120
         for line in message_lines:
             text_surface = self.body_font.render(line, True, settings.COLOR_TEXT_PRIMARY)
@@ -246,7 +289,11 @@ class ProgressOverviewScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=32)
 
-        heading = self.section_font.render("Laatste test", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("progress_overview.latest.heading", default="Laatste test"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + 32, card.top + 28)))
 
         assert self.latest_result is not None
@@ -257,22 +304,40 @@ class ProgressOverviewScene(Scene):
         duration = self._format_duration(latest.elapsed_seconds)
         remaining = self._format_duration(latest.remaining_seconds)
 
-        stats = [
-            ("Tafels", tables),
-            ("Nauwkeurigheid", accuracy),
-            ("Beantwoord", f"{latest.answered}/{latest.question_count}"),
-            ("Gebruikte tijd", duration),
-            ("Over", remaining),
-        ]
+        stats = {
+            "tables": tables,
+            "accuracy": accuracy,
+            "answered": f"{latest.answered}/{latest.question_count}",
+            "time_used": duration,
+            "remaining": remaining,
+        }
 
         info_x = card.left + 32
         info_y = card.top + 90
-        timestamp_surface = self.body_font.render(f"Afgerond op {timestamp}", True, settings.COLOR_TEXT_DIM)
+        timestamp_surface = self.body_font.render(
+            self.tr(
+                "progress_overview.latest.completed_on",
+                default="Afgerond op {timestamp}",
+                timestamp=timestamp,
+            ),
+            True,
+            settings.COLOR_TEXT_DIM,
+        )
         surface.blit(timestamp_surface, (info_x, info_y))
         info_y += 36
 
-        for label, value in stats:
-            label_surface = self.small_font.render(label, True, settings.COLOR_TEXT_DIM)
+        for key, value in stats.items():
+            label_text = self.tr(
+                f"progress_overview.latest.labels.{key}",
+                default={
+                    "tables": "Tafels",
+                    "accuracy": "Nauwkeurigheid",
+                    "answered": "Beantwoord",
+                    "time_used": "Gebruikte tijd",
+                    "remaining": "Over",
+                }[key],
+            )
+            label_surface = self.small_font.render(label_text, True, settings.COLOR_TEXT_DIM)
             value_surface = self.stat_font.render(value, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(label_surface, (info_x, info_y))
             surface.blit(value_surface, (info_x + 180, info_y - 6))
@@ -290,7 +355,11 @@ class ProgressOverviewScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=28)
 
-        heading = self.section_font.render("Trends", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("progress_overview.trends.heading", default="Trends"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
 
         streak = self._longest_streak(self.recent_results)
@@ -299,10 +368,26 @@ class ProgressOverviewScene(Scene):
         average_time = self._average_time(self.recent_results)
 
         messages = [
-            f"Gemiddelde nauwkeurigheid: {average_accuracy * 100:.0f}%",
-            f"Verandering t.o.v. vorige: {change:+.0f} punten",
-            f"Langste streak: {streak}",
-            f"Gem. reactietijd: {average_time:.1f}s",
+            self.tr(
+                "progress_overview.trends.average_accuracy",
+                default="Gemiddelde nauwkeurigheid: {value}",
+                value=f"{average_accuracy * 100:.0f}%",
+            ),
+            self.tr(
+                "progress_overview.trends.change",
+                default="Verandering t.o.v. vorige: {delta}",
+                delta=f"{change:+.0f} punten",
+            ),
+            self.tr(
+                "progress_overview.trends.longest_streak",
+                default="Langste streak: {value}",
+                value=streak,
+            ),
+            self.tr(
+                "progress_overview.trends.average_time",
+                default="Gem. reactietijd: {value}",
+                value=f"{average_time:.1f}s",
+            ),
         ]
 
         y = card.top + 80
@@ -312,15 +397,22 @@ class ProgressOverviewScene(Scene):
             y += 32
 
         if self.tricky_tables:
-            hint = self.small_font.render("Focus tafels:", True, settings.COLOR_TEXT_DIM)
+            hint = self.small_font.render(
+                self.tr("progress_overview.trends.focus_label", default="Focus tafels:"),
+                True,
+                settings.COLOR_TEXT_DIM,
+            )
             surface.blit(hint, (card.right - 210, card.top + 24))
             ty = card.top + 56
             for table, incorrect, avg_time in self.tricky_tables:
-                text = self.small_font.render(
-                    f"Tafel {table}: {int(incorrect)} fout, {avg_time:.1f}s",
-                    True,
-                    settings.COLOR_TEXT_PRIMARY,
+                text_value = self.tr(
+                    "progress_overview.trends.focus_item",
+                    default="Tafel {table}: {incorrect} fout, {average}s",
+                    table=table,
+                    incorrect=int(incorrect),
+                    average=f"{avg_time:.1f}",
                 )
+                text = self.small_font.render(text_value, True, settings.COLOR_TEXT_PRIMARY)
                 surface.blit(text, (card.right - 210, ty))
                 ty += 26
 
@@ -337,7 +429,11 @@ class ProgressOverviewScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=28)
 
-        heading = self.section_font.render("Laatste resultaten", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("progress_overview.history.heading", default="Laatste resultaten"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
 
         recent = list(self.recent_results[-5:])
@@ -347,11 +443,14 @@ class ProgressOverviewScene(Scene):
             date_text = result.timestamp.strftime("%d %b")
             accuracy = f"{result.accuracy * 100:.0f}%"
             tables = ", ".join(str(n) for n in result.tables) or "-"
-            line = self.body_font.render(
-                f"{date_text} • {accuracy} • Tafels {tables}",
-                True,
-                settings.COLOR_TEXT_PRIMARY,
+            line_text = self.tr(
+                "progress_overview.history.item",
+                default="{date} • {accuracy} • Tafels {tables}",
+                date=date_text,
+                accuracy=accuracy,
+                tables=tables,
             )
+            line = self.body_font.render(line_text, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(line, (card.left + 28, y))
             y += 32
 
@@ -365,17 +464,44 @@ class ProgressOverviewScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=32)
 
-        heading = self.section_font.render("Leaderboard", True, settings.COLOR_TEXT_PRIMARY)
+        heading = self.section_font.render(
+            self.tr("progress_overview.leaderboard.heading", default="Leaderboard"),
+            True,
+            settings.COLOR_TEXT_PRIMARY,
+        )
         surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 26)))
 
         if not self.leaderboard_rows:
-            message = self.body_font.render("Nog niemand heeft een test gedaan.", True, settings.COLOR_TEXT_PRIMARY)
+            message = self.body_font.render(
+                self.tr(
+                    "progress_overview.leaderboard.empty",
+                    default="Nog niemand heeft een test gedaan.",
+                ),
+                True,
+                settings.COLOR_TEXT_PRIMARY,
+            )
             surface.blit(message, (card.left + 28, card.top + 90))
             return
 
-        headers = ["Naam", "Tests", "Gem. %", "Beste %", "Laatste"]
-        col_x = [card.left + 28, card.left + 200, card.left + 280, card.left + 380, card.left + 500]
-        for text, x in zip(headers, col_x):
+        header_defs = [
+            ("name", card.left + 28),
+            ("tests", card.left + 200),
+            ("average", card.left + 280),
+            ("best", card.left + 380),
+            ("last", card.left + 500),
+        ]
+        col_x = [pos for _, pos in header_defs]
+        for key, x in header_defs:
+            text = self.tr(
+                f"progress_overview.leaderboard.headers.{key}",
+                default={
+                    "name": "Naam",
+                    "tests": "Tests",
+                    "average": "Gem. %",
+                    "best": "Beste %",
+                    "last": "Laatste",
+                }[key],
+            )
             header_surface = self.small_font.render(text, True, settings.COLOR_TEXT_DIM)
             surface.blit(header_surface, (x, card.top + 74))
 
@@ -412,51 +538,38 @@ class ProgressOverviewScene(Scene):
         start_x = right - total_width
 
         configs = [
-            ("Start nieuwe test", pygame.Rect(start_x, bottom, 240, 78)),
-            ("Ga oefenen", pygame.Rect(start_x + 260, bottom, 220, 78)),
+            ("start_test", pygame.Rect(start_x, bottom, 240, 78)),
+            ("go_practice", pygame.Rect(start_x + 260, bottom, 220, 78)),
         ]
 
         mouse_pos = pygame.mouse.get_pos()
         self.buttons = []
         if self.top_back_rect is not None:
-            self.buttons.append(("Terug", self.top_back_rect))
-        for label, rect in configs:
+            self.buttons.append(("back", self.top_back_rect))
+        for action, rect in configs:
             face = draw_glossy_button(
                 surface,
                 rect,
-                self.button_palettes[label],
+                self.button_palettes[action],
                 selected=False,
                 hover=rect.collidepoint(mouse_pos),
                 corner_radius=28,
             )
-            text_surface = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
+            text_surface = self.button_font.render(self.action_labels[action], True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(text_surface, text_surface.get_rect(center=face.center))
-            self.buttons.append((label, rect))
+            self.buttons.append((action, rect))
 
         if self.top_back_rect is not None:
             back_face = draw_glossy_button(
                 surface,
                 self.top_back_rect,
-                self.button_palettes["Terug"],
+                self.button_palettes["back"],
                 selected=False,
                 hover=self.top_back_rect.collidepoint(mouse_pos),
                 corner_radius=24,
             )
-            back_text = self.button_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+            back_text = self.button_font.render(self.action_labels["back"], True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(back_text, back_text.get_rect(center=back_face.center))
-
-        # redraw fixed back button with proper palette
-        back_label, back_rect = self.buttons[0]
-        back_face = draw_glossy_button(
-            surface,
-            back_rect,
-            self.button_palettes["Terug"],
-            selected=False,
-            hover=back_rect.collidepoint(mouse_pos),
-            corner_radius=24,
-        )
-        back_text = self.button_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(back_text, back_text.get_rect(center=back_face.center))
 
     # Helpers --------------------------------------------------------
     def _average_accuracy(self, results: Sequence[TestResult]) -> float:

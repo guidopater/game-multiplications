@@ -35,6 +35,10 @@
     },
     "time": {
       "label": "Time: {value}"
+    },
+    "toggle": {
+      "on": "On",
+      "off": "Off"
     }
   },
   "main_menu": {
@@ -88,6 +92,57 @@
       "incorrect_prefix": "X",
       "correct": "{prefix} {label} = {answer} ({duration}s)",
       "incorrect": "{prefix} {label} != {given} -> {correct} ({duration}s)"
+    }
+  },
+  "progress_overview": {
+    "actions": {
+      "start_test": "Start new test",
+      "go_practice": "Go practise",
+      "back": "Back"
+    },
+    "title": "How did you do, {name}?",
+    "subtitle": "See your progress and compare with the rest of the team!",
+    "empty": {
+      "heading": "No tests yet",
+      "lines": [
+        "You haven't taken a test yet.",
+        "Start a new test to track your progress!"
+      ]
+    },
+    "latest": {
+      "heading": "Latest test",
+      "completed_on": "Completed on {timestamp}",
+      "labels": {
+        "tables": "Tables",
+        "accuracy": "Accuracy",
+        "answered": "Answered",
+        "time_used": "Time used",
+        "remaining": "Remaining"
+      }
+    },
+    "trends": {
+      "heading": "Trends",
+      "average_accuracy": "Average accuracy: {value}",
+      "change": "Change vs previous: {delta}",
+      "longest_streak": "Longest streak: {value}",
+      "average_time": "Avg. reaction time: {value}",
+      "focus_label": "Focus tables:",
+      "focus_item": "Table {table}: {incorrect} wrong, {average}s"
+    },
+    "history": {
+      "heading": "Recent results",
+      "item": "{date} • {accuracy} • Tables {tables}"
+    },
+    "leaderboard": {
+      "heading": "Leaderboard",
+      "empty": "No one has taken a test yet.",
+      "headers": {
+        "name": "Name",
+        "tests": "Tests",
+        "average": "Avg %",
+        "best": "Best %",
+        "last": "Last"
+      }
     }
   },
   "test_setup": {
@@ -157,6 +212,98 @@
       "focus": "Take another look at the {table} table. You missed {incorrect} and it takes about {average}s. A quick practice run will help!",
       "speed": "You're very accurate! Try the {table} table again to get even faster. Right now it takes {average}s per question.",
       "default": "Keep practising and mix tables to challenge yourself even more."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Tailor the game to your family.",
+    "sections": {
+      "audio": "Audio",
+      "defaults": "Default settings",
+      "feedback": "Feedback & language",
+      "profiles": "Profiles",
+      "data": "Data & privacy",
+      "support": "For the parents, carers and teachers!"
+    },
+    "audio": {
+      "music": "Music",
+      "effects": "Effects"
+    },
+    "defaults": {
+      "practice_tables": "Practice tables",
+      "test_tables": "Test tables",
+      "speed": "Speed",
+      "questions": "Number of questions"
+    },
+    "feedback": {
+      "hints": "Hints",
+      "language": "Language",
+      "large_text": "Large text",
+      "options": {
+        "warm": "Warm hints",
+        "compact": "Compact hints"
+      },
+      "languages": {
+        "nl": "Dutch",
+        "en": "English"
+      }
+    },
+    "profiles": {
+      "active_name": "Active profile name",
+      "buttons": {
+        "save_name": "Save name",
+        "new_profile": "New profile",
+        "reset_coins": "Reset coins",
+        "delete_profile": "Delete profile"
+      },
+      "default_name": "Player {number}",
+      "messages": {
+        "coins_reset": "Coins reset to 0.",
+        "needs_one": "You need at least one profile.",
+        "profile_deleted": "Profile removed.",
+        "profile_created": "New profile created.",
+        "name_empty": "Name can't be empty.",
+        "name_saved": "Name saved."
+      }
+    },
+    "data": {
+      "buttons": {
+        "export_scores": {
+          "label": "Export scores",
+          "description": "Saves all test results as a JSON file."
+        },
+        "reset_scores": {
+          "label": "Reset active profile scores",
+          "description": "Only removes results for the selected profile."
+        },
+        "reset_all": {
+          "label": "Full reset",
+          "description": "Deletes all profiles and scores permanently."
+        }
+      },
+      "warning": "Note: resets do not ask for confirmation, use with care!",
+      "messages": {
+        "reset_scores": "Cleared scores for this profile.",
+        "reset_all": "All data removed.",
+        "exported": "Scores saved to {filename}."
+      }
+    },
+    "support": {
+      "heading": "For the parents, carers and teachers!",
+      "lines": [
+        "This game is built to help kids practise their tables in a playful way.",
+        "Inspired by my daughter's complete lack of enthusiasm for practising tables.",
+        "I wanted to build a little game for her where learning is rewarded and distractions stay low.",
+        "Most importantly: no ads, no tracking—just cheerful, simple learning.",
+        "Find it useful? Please share it! Truly thrilled? Feel free to treat me to a coffee ;)"
+      ],
+      "cta": "Buy a coffee",
+      "thank_you": "Thank you! Coffee link coming soon."
+    },
+    "save": {
+      "saved": "Saved",
+      "save_changes": "Save settings",
+      "confirmation": "Settings saved."
     }
   }
 }

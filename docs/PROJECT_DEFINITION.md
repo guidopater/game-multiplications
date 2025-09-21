@@ -8,22 +8,24 @@ This document captures the shared understanding of the multiplication game so fu
 - Profiles keep progress personal while allowing siblings to share one installation.
 
 ## Core Flows
-- **Main Menu (`MainMenuScene`)**: hub that surfaces the primary modes, profile selector, and quick feedback.
+- **Main Menu (`MainMenuScene`)**
+  - Hub that surfaces primary modes, profile selector, and quick feedback. All copy resolves via the shared translator helpers.
 - **Practice Mode**
   - No timers or coins; focus on repetition and understanding.
   - Player chooses tables only (`PracticeSetupScene`).
   - Session (`PracticeSessionScene`) adapts question weighting using recent accuracy and answer time so tricky tables resurface more often.
   - Exiting shows a summary (`PracticeSummaryScene`) with accuracy, streaks, tricky tables, and quick tips. Players can restart with the same configuration or return to the menu.
-- **Progress Overview**
-  - "Hoe deed je het?" opens `ProgressOverviewScene` with the latest test highlight, friendly trends, and a leaderboard comparing profiles.
-  - Pulls historical tests from `ScoreRepository` and spotlights tricky tables to focus on next time.
+- **Progress Overview (`ProgressOverviewScene`)**
+  - "Hoe deed je het?" highlights the latest test, friendly trends, and a leaderboard comparing profiles.
+  - Pulls historical tests from `ScoreRepository`, surfacing tricky tables and trend notes; fully translated using locale keys.
 - **Settings (`SettingsScene`)**
   - Central place for audio toggles, default practice/test voorkeuren, feedbackstijl, taalkeuze, en grote-tekstmodus.
-  - Scrollbaar ontwerp met ruime kaarten; beheert profielen (naam wijzigen, nieuw profiel, reset munten) en data-acties (export/reset).
+  - Scrollable cards manage profiles (rename, nieuw profiel, reset munten) and data-acties (export/reset) with translated feedback messages.
   - Bevat een "koop een koffie"-call-to-action met uitleg over het advertentievrije, privacyvriendelijke karakter van het spel.
-- **Test Mode** (partially implemented)
+- **Test Mode**
   - Time-bound challenge configured in `TestSetupScene` with table selection, number of questions, and speed presets.
-  - Results will feed coins and the leaderboard through `ScoreRepository`.
+  - `TestSessionScene` awards coins, tracks timing, and provides multilingual encouragement.
+  - `TestSummaryScene` summarises results, suggestions, and leaderboard impact with locale-aware strings.
 
 ## Data & Persistence
 - Profiles live in `data/profiles.json` and include identifier, display name, avatar, and coin balance.
@@ -41,11 +43,12 @@ This document captures the shared understanding of the multiplication game so fu
 - `App` initialises pygame, loads profiles/sounds, stores shared resources, and swaps scenes.
 - Scenes inherit from `Scene` for consistent gradient backgrounds and optional back buttons.
 - UI helpers like `draw_glossy_button` provide the signature candy look.
-- Practice scenes currently operate independently; test and future screens should follow the same scene contract so the main menu can swap seamlessly.
+- Scenes inherit from `Scene` for consistent backgrounds, translator access (`tr`/`tr_list`), and optional back buttons.
+- Practice/test screens follow the shared scene contract so the main menu can swap seamlessly.
 
 ## Next Architectural Steps
 - Complete the test session/summaries and persist results with richer analytics.
-- Implement localisation plumbing zodat de taalkeuze het UI-tekst daadwerkelijk wisselt.
+- Implement localisation plumbing zodat de taalkeuze het UI-tekst daadwerkelijk wisselt. ✅ Locale bestanden voor NL/EN, `Translator` helpers, en alle kernscenes gebruiken nu gedeelde sleutels.
 - Factor out shared table-selection widgets if configuration UIs start to diverge.
 - Consider a lightweight service layer for awarding coins or achievements once multiple scenes need the same logic.
 

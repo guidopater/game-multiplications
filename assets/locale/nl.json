@@ -35,6 +35,10 @@
     },
     "time": {
       "label": "Tijd: {value}"
+    },
+    "toggle": {
+      "on": "Aan",
+      "off": "Uit"
     }
   },
   "main_menu": {
@@ -88,6 +92,57 @@
       "incorrect_prefix": "X",
       "correct": "{prefix} {label} = {answer} ({duration}s)",
       "incorrect": "{prefix} {label} != {given} -> {correct} ({duration}s)"
+    }
+  },
+  "progress_overview": {
+    "actions": {
+      "start_test": "Start nieuwe test",
+      "go_practice": "Ga oefenen",
+      "back": "Terug"
+    },
+    "title": "Hoe deed je het, {name}?",
+    "subtitle": "Bekijk je voortgang en vergelijk met de rest van het team!",
+    "empty": {
+      "heading": "Nog geen tests",
+      "lines": [
+        "Je hebt nog geen test gedaan.",
+        "Start een nieuwe test om je vooruitgang bij te houden!"
+      ]
+    },
+    "latest": {
+      "heading": "Laatste test",
+      "completed_on": "Afgerond op {timestamp}",
+      "labels": {
+        "tables": "Tafels",
+        "accuracy": "Nauwkeurigheid",
+        "answered": "Beantwoord",
+        "time_used": "Gebruikte tijd",
+        "remaining": "Over"
+      }
+    },
+    "trends": {
+      "heading": "Trends",
+      "average_accuracy": "Gemiddelde nauwkeurigheid: {value}",
+      "change": "Verandering t.o.v. vorige: {delta}",
+      "longest_streak": "Langste streak: {value}",
+      "average_time": "Gem. reactietijd: {value}",
+      "focus_label": "Focus tafels:",
+      "focus_item": "Tafel {table}: {incorrect} fout, {average}s"
+    },
+    "history": {
+      "heading": "Laatste resultaten",
+      "item": "{date} • {accuracy} • Tafels {tables}"
+    },
+    "leaderboard": {
+      "heading": "Leaderboard",
+      "empty": "Nog niemand heeft een test gedaan.",
+      "headers": {
+        "name": "Naam",
+        "tests": "Tests",
+        "average": "Gem. %",
+        "best": "Beste %",
+        "last": "Laatste"
+      }
     }
   },
   "test_setup": {
@@ -157,6 +212,98 @@
       "focus": "Neem de tafel van {table} nog even door. Er gingen {incorrect} sommen mis en het kost gemiddeld {average}s. Een oefenrondje maakt je supersnel!",
       "speed": "Je bent heel precies! Misschien kun je de tafel van {table} nog eens oefenen om nog sneller te worden. Nu kost een som gemiddeld {average}s.",
       "default": "Blijf oefenen en daag jezelf uit met een mix van tafels voor nog meer snelheid."
+    }
+  },
+  "settings": {
+    "title": "Instellingen",
+    "subtitle": "Pas het spel aan op jouw gezin.",
+    "sections": {
+      "audio": "Geluid",
+      "defaults": "Standaard instellingen",
+      "feedback": "Feedback & taal",
+      "profiles": "Profielen",
+      "data": "Data & privacy",
+      "support": "Voor de mama's, papa's, verzorgers en onderwijzers!"
+    },
+    "audio": {
+      "music": "Muziek",
+      "effects": "Effecten"
+    },
+    "defaults": {
+      "practice_tables": "Oefenen tafels",
+      "test_tables": "Test tafels",
+      "speed": "Snelheid",
+      "questions": "Aantal vragen"
+    },
+    "feedback": {
+      "hints": "Hints",
+      "language": "Taal",
+      "large_text": "Grote tekst",
+      "options": {
+        "warm": "Warme hints",
+        "compact": "Korte hints"
+      },
+      "languages": {
+        "nl": "Nederlands",
+        "en": "English"
+      }
+    },
+    "profiles": {
+      "active_name": "Naam actief profiel",
+      "buttons": {
+        "save_name": "Bewaar naam",
+        "new_profile": "Nieuw profiel",
+        "reset_coins": "Reset munten",
+        "delete_profile": "Verwijder profiel"
+      },
+      "default_name": "Speler {number}",
+      "messages": {
+        "coins_reset": "Munten teruggezet naar 0.",
+        "needs_one": "Je hebt minimaal één profiel nodig.",
+        "profile_deleted": "Profiel verwijderd.",
+        "profile_created": "Nieuw profiel aangemaakt.",
+        "name_empty": "Naam mag niet leeg zijn.",
+        "name_saved": "Naam opgeslagen."
+      }
+    },
+    "data": {
+      "buttons": {
+        "export_scores": {
+          "label": "Exporteer scores",
+          "description": "Slaat alle testresultaten op als JSON-bestand."
+        },
+        "reset_scores": {
+          "label": "Reset scores actief profiel",
+          "description": "Verwijdert alleen resultaten van het gekozen profiel."
+        },
+        "reset_all": {
+          "label": "Complete reset",
+          "description": "Wist alle profielen en scores permanent."
+        }
+      },
+      "warning": "Let op: resets vragen geen bevestiging, gebruik ze bewust!",
+      "messages": {
+        "reset_scores": "Scores van dit profiel gewist.",
+        "reset_all": "Alle data gewist.",
+        "exported": "Scores opgeslagen naar {filename}."
+      }
+    },
+    "support": {
+      "heading": "Voor de mama's, papa's, verzorgers en onderwijzers!",
+      "lines": [
+        "Dit spel is gemaakt om kinderen spelenderwijs tafels te oefenen.",
+        "Geïnspireerd het totaal geen zin hebben om tafels te oefenen van mijn dochter.",
+        "Ik wilde graag een spelletje opzetten voor haar waarbij leren wordt beloond en er weinig afleiding is.",
+        "Belangrijker nog: geen advertenties, geen tracking, maar gewoon vrolijk en simpel leren.",
+        "Vind je het waardevol? Vertel het vooral door! Echt heel blij? Dan mag je me altijd trakteren op een koffie ;)"
+      ],
+      "cta": "Koop een koffie",
+      "thank_you": "Bedankt! Koffielink volgt binnenkort."
+    },
+    "save": {
+      "saved": "Opgeslagen",
+      "save_changes": "Instellingen opslaan",
+      "confirmation": "Instellingen opgeslagen."
     }
   }
 }

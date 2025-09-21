@@ -95,6 +95,7 @@ class PracticeSessionScene(Scene):
             text_color=settings.COLOR_TEXT_PRIMARY,
             callback=self.on_back,
         )
+        self.back_button_rect: pygame.Rect | None = None
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: Sequence[pygame.event.Event]) -> None:
@@ -246,6 +247,7 @@ class PracticeSessionScene(Scene):
         rect = pygame.Rect(margin, margin + 6, width, height)
         self.back_button.set_rect(rect)
         self.back_button.render(surface, hover=rect.collidepoint(pygame.mouse.get_pos()))
+        self.back_button_rect = rect
 
     def _question_center(self) -> tuple[int, int]:
         rect = self.app.screen.get_rect()

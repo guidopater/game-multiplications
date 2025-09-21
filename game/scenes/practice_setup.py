@@ -131,7 +131,7 @@ class PracticeSetupScene(Scene):
             default="Voor welke tafels wil je gaan?",
         )
         header = self.section_font.render(header_text, True, settings.COLOR_ACCENT_LIGHT)
-        surface.blit(header, header.get_rect(topleft=(margin, margin + 70)))
+        surface.blit(header, header.get_rect(topleft=(margin, margin + 100)))
 
         cols = 5
         button_size = (150, 64)
