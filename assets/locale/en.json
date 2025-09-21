@@ -250,7 +250,7 @@
     },
     "profiles": {
       "active_name": "Active profile name",
-      "avatar_label": "Pick an avatar",
+      "avatar_label": "Pick a picture",
       "buttons": {
         "save_name": "Save name",
         "new_profile": "New profile",
@@ -265,9 +265,20 @@
         "profile_created": "New profile created.",
         "name_empty": "Name can't be empty.",
         "name_saved": "Name saved.",
-        "avatar_saved": "Avatar updated."
-      }
-    },
+      "avatar_saved": "Avatar updated."
+    }
+  },
+  "onboarding": {
+    "title": "Welcome to Tafelhelden!",
+    "subtitle": "Let's create a profile so we can track your coins and progress.",
+    "name_label": "What's your name?",
+    "name_placeholder": "Type your name",
+    "avatar_label": "Pick a picture",
+    "start_button": "Let's go!",
+    "errors": {
+      "name_empty": "Please enter your name."
+    }
+  },
     "data": {
       "buttons": {
         "export_scores": {

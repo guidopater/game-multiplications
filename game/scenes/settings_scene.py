@@ -13,6 +13,7 @@ import pygame
 
 from .. import settings
 from ..ui import draw_glossy_button
+from ..avatar_utils import load_avatar_surface, apply_round_corners
 from .base import Scene
 
 
@@ -59,10 +60,14 @@ class SettingsScene(Scene):
         self.avatar_cell_size = 108
         self.avatar_thumbnail_size = 78
         self.avatar_columns = 5
-        self.selected_avatar = self.app.active_profile.avatar_filename or self.app.default_avatar_filename()
+        active_profile = self.app.active_profile
+        avatar_default = self.app.default_avatar_filename()
+        self.selected_avatar = (
+            active_profile.avatar_filename if active_profile else avatar_default
+        ) or avatar_default
 
         self.name_input_active = False
-        self.name_buffer = self.app.active_profile.display_name
+        self.name_buffer = active_profile.display_name if active_profile else ""
         self.name_input_rect: pygame.Rect | None = None
 
         self.buy_rect: pygame.Rect | None = None
@@ -583,7 +588,7 @@ class SettingsScene(Scene):
         self.avatar_rects = []
         if avatar_rows > 0:
             avatar_label = self.option_font.render(
-                self.tr("settings.profiles.avatar_label", default="Avatar"),
+                self.tr("settings.profiles.avatar_label", default="Pick a picture"),
                 True,
                 settings.COLOR_TEXT_PRIMARY,
             )
@@ -689,17 +694,9 @@ class SettingsScene(Scene):
             return self.avatar_surface_cache[filename]
 
         path = self.app.assets_dir / "images" / filename
-        if not path.exists():
-            self.avatar_surface_cache[filename] = None
-            return None
-        try:
-            image = pygame.image.load(path).convert_alpha()
-        except pygame.error:
-            self.avatar_surface_cache[filename] = None
-            return None
-
-        size = self.avatar_thumbnail_size
-        surface = pygame.transform.smoothscale(image, (size, size))
+        surface = load_avatar_surface(path, self.avatar_thumbnail_size, self._avatar_corner_radius())
+        if surface is None:
+            surface = self._generate_avatar_placeholder()
         self.avatar_surface_cache[filename] = surface
         return surface
 
@@ -985,6 +982,21 @@ class SettingsScene(Scene):
     def _is_hover(self, rect: pygame.Rect) -> bool:
         return rect.collidepoint(self.pointer_content_pos)
 
+    def _avatar_corner_radius(self) -> int:
+        return max(8, int(self.avatar_thumbnail_size * 32 / max(self.avatar_cell_size, 1)))
+
+    def _generate_avatar_placeholder(self) -> pygame.Surface:
+        size = self.avatar_thumbnail_size
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        radius = self._avatar_corner_radius()
+        pygame.draw.rect(surface, (240, 240, 240), surface.get_rect(), border_radius=radius)
+        pygame.draw.rect(surface, (210, 210, 210), surface.get_rect(), width=4, border_radius=radius)
+        letter = (self.app.active_profile.display_name[:1] if self.app.active_profile else "?").upper()
+        font = settings.load_title_font(30)
+        text = font.render(letter, True, settings.COLOR_TEXT_PRIMARY)
+        surface.blit(text, text.get_rect(center=(size // 2, size // 2)))
+        return apply_round_corners(surface, radius)
+
     def _adjust_scroll(self, delta: float) -> None:
         if self.max_scroll <= 0:
             self.scroll_offset = 0.0
@@ -1008,13 +1020,17 @@ class SettingsScene(Scene):
     def _select_avatar(self, filename: str) -> None:
         if not filename:
             return
-        current = self.app.active_profile.avatar_filename
+        profile = self.app.active_profile
+        if profile is None:
+            return
+        current = profile.avatar_filename
         if filename == current:
             return
         self.selected_avatar = filename
-        self.app.active_profile.avatar_filename = filename
-        self.app.profiles[self.app.active_profile_index] = self.app.active_profile
+        profile.avatar_filename = filename
+        self.app.profiles[self.app.active_profile_index] = profile
         self.app.save_profiles()
+        self.app.update_gradient_for_avatar(filename)
         self.feedback_message = self.tr(
             "settings.profiles.messages.avatar_saved",
             default="Avatar gewijzigd.",

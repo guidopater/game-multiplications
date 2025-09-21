@@ -10,7 +10,7 @@
 
 ## Profiles & Progress
 - [x] Add avatar selectie per profiel.
-- [ ] On game startup, when there is no profile, we want to welcome the user and let them easily create a first profile. The target audience are kids between 6-10, so we want to make it as easy as just asking for their firstname and let them select a avatar.
+- [x] On game startup, when there is no profile, we want to welcome the user and let them easily create a first profile. The target audience are kids tussen 6-10, so we want to make it as easy as just asking for their firstname and let them select a avatar.
 - [x] Provide a way to reset profiles and scores from within the UI.
 
 

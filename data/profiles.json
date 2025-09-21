@@ -4,11 +4,5 @@
     "display_name": "Feline",
     "avatar": "avatar_1.png",
     "coins": 0
-  },
-  {
-    "id": "julius",
-    "display_name": "Julius",
-    "avatar": "avatar_2.png",
-    "coins": 0
   }
 ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import List, Type
+from typing import Dict, List, Type
 
 import pygame
 
@@ -16,6 +16,7 @@ from .scenes.base import Scene
 from .scenes.main_menu import MainMenuScene
 from .preferences import SettingsStore
 from .storage import ScoreRepository
+from .avatar_utils import gradient_from_avatar
 
 
 class App:
@@ -55,31 +56,25 @@ class App:
         self.settings: GameSettings = self.settings_store.load()
         self.translator = Translator(self.assets_dir / "locale", self.settings.language, default_language="nl")
         self.profiles = self._load_profiles()
-        if not self.profiles:
-            self.profiles = [
-                PlayerProfile("feline", "Feline", self.default_avatar_filename(), coins=0),
-                PlayerProfile("julius", "Julius", self.default_avatar_filename(1), coins=0),
-            ]
-            self.save_profiles()
         self.active_profile_index = 0
-        self.active_profile: PlayerProfile = self.profiles[self.active_profile_index]
-        self.profile_styles: dict[str, dict[str, tuple[int, int, int] | tuple[tuple[int, int, int], tuple[int, int, int]]]] = {
-            "feline": {
-                "gradient": ((255, 163, 68), (248, 73, 147)),
-            },
-            "julius": {
-                "gradient": ((92, 215, 144), (33, 150, 83)),
-            },
-        }
+        self.active_profile: PlayerProfile | None = self.profiles[0] if self.profiles else None
+        self._base_gradient = (settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+        self._avatar_gradient_cache: Dict[str, tuple[tuple[int, int, int], tuple[int, int, int]]] = {}
         self.coin_icon = self._load_coin_icon(self.assets_dir / "images" / "coin.png")
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         self._load_sounds()
         if pygame.mixer.get_init():
             pygame.mixer.music.set_volume(1.0 if self.settings.music_enabled else 0.0)
-        self._apply_profile_style(self.active_profile.identifier)
+        if self.active_profile is not None:
+            self._apply_profile_style(self.active_profile)
         self.save_profiles()
 
-        self._scene: Scene = MainMenuScene(self)
+        if self.active_profile is not None:
+            self._scene: Scene = MainMenuScene(self)
+        else:
+            from .scenes.profile_onboarding import ProfileOnboardingScene
+
+            self._scene = ProfileOnboardingScene(self)
 
     @property
     def scene(self) -> Scene:
@@ -111,7 +106,7 @@ class App:
             index = 0
         self.active_profile_index = index
         self.active_profile = profile
-        self._apply_profile_style(profile.identifier)
+        self._apply_profile_style(profile)
 
     def _load_profiles(self) -> List[PlayerProfile]:
         """Load player profiles from JSON if available."""
@@ -147,14 +142,9 @@ class App:
         data = [profile.to_dict() for profile in self.profiles]
         config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    def _apply_profile_style(self, profile_id: str) -> None:
-        style = self.profile_styles.get(profile_id)
-        if not style:
-            style = next(iter(self.profile_styles.values()), None)
-        if style and "gradient" in style:
-            top, bottom = style["gradient"]  # type: ignore[assignment]
-            settings.GRADIENT_TOP = top
-            settings.GRADIENT_BOTTOM = bottom
+    def _apply_profile_style(self, profile: PlayerProfile | None) -> None:
+        avatar_filename = profile.avatar_filename if profile else None
+        self.update_gradient_for_avatar(avatar_filename)
 
     def _load_sounds(self) -> None:
         if not pygame.mixer.get_init():
@@ -187,6 +177,8 @@ class App:
 
     def adjust_active_coins(self, delta: int) -> int:
         profile = self.active_profile
+        if profile is None:
+            return 0
         profile.coins = max(0, profile.coins + delta)
         self.profiles[self.active_profile_index] = profile
         self.save_profiles()
@@ -242,6 +234,22 @@ class App:
             return []
         avatars.sort(key=lambda item: (item[0], item[1]))
         return [name for _, name in avatars]
+
+    def update_gradient_for_avatar(self, avatar_filename: str | None) -> None:
+        top, bottom = self._get_gradient_for_avatar(avatar_filename)
+        settings.GRADIENT_TOP = top
+        settings.GRADIENT_BOTTOM = bottom
+
+    def _get_gradient_for_avatar(self, avatar_filename: str | None) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+        if not avatar_filename:
+            return self._base_gradient
+        cached = self._avatar_gradient_cache.get(avatar_filename)
+        if cached:
+            return cached
+        path = self.assets_dir / "images" / avatar_filename
+        gradient = gradient_from_avatar(path, self._base_gradient)
+        self._avatar_gradient_cache[avatar_filename] = gradient
+        return gradient
 
 
 __all__ = ["App"]

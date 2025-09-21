@@ -250,7 +250,7 @@
     },
     "profiles": {
       "active_name": "Naam actief profiel",
-      "avatar_label": "Kies een avatar",
+      "avatar_label": "Kies een plaatje",
       "buttons": {
         "save_name": "Bewaar naam",
         "new_profile": "Nieuw profiel",
@@ -265,9 +265,20 @@
         "profile_created": "Nieuw profiel aangemaakt.",
         "name_empty": "Naam mag niet leeg zijn.",
         "name_saved": "Naam opgeslagen.",
-        "avatar_saved": "Avatar gewijzigd."
-      }
-    },
+      "avatar_saved": "Avatar gewijzigd."
+    }
+  },
+  "onboarding": {
+    "title": "Welkom bij Tafelhelden!",
+    "subtitle": "Maak een profiel zodat we je munten en voortgang kunnen bijhouden.",
+    "name_label": "Hoe heet je?",
+    "name_placeholder": "Typ je voornaam",
+    "avatar_label": "Kies een plaatje",
+    "start_button": "Ik ben klaar!",
+    "errors": {
+      "name_empty": "Vul een naam in"
+    }
+  },
     "data": {
       "buttons": {
         "export_scores": {

@@ -9,6 +9,7 @@ from .practice_session import PracticeSessionScene
 from .practice_summary import PracticeSummaryScene
 from .progress_overview import ProgressOverviewScene
 from .settings_scene import SettingsScene
+from .profile_onboarding import ProfileOnboardingScene
 
 __all__ = [
     "MainMenuScene",
@@ -20,4 +21,5 @@ __all__ = [
     "PracticeSummaryScene",
     "ProgressOverviewScene",
     "SettingsScene",
+    "ProfileOnboardingScene",
 ]
