@@ -1,6 +1,41 @@
 {
   "common": {
-    "back": "Back"
+    "back": "Back",
+    "stop": "Stop",
+    "play_again": "Play again!",
+    "return_menu": "Back to menu",
+    "tables": {
+      "header": "Which tables do you want to practice?",
+      "label": "Table {number}",
+      "hint_select": "Tip: press 'A' to select all, 'W' to clear"
+    },
+    "feedback": {
+      "choose_table": "Select at least one table.",
+      "answer_hint": "Type the answer and press ENTER",
+      "enter_answer": "Enter an answer first.",
+      "digits_only": "Use digits only.",
+      "correct_default": [
+        "Great!",
+        "Awesome!",
+        "Keep it up!"
+      ]
+    },
+    "stats": {
+      "turns": "Turns: {count}",
+      "correct": "Correct: {count}",
+      "incorrect": "Wrong: {count}",
+      "streak": "Streak: {count}",
+      "accuracy": "Accuracy: {percentage}%",
+      "answered": "Answered: {answered} of {total}"
+    },
+    "coins": {
+      "round": "Round coins: {amount}",
+      "total": "Total: {amount}",
+      "potential": "Potential reward: {coins} coins"
+    },
+    "time": {
+      "label": "Time: {value}"
+    }
   },
   "main_menu": {
     "greeting": "Hi {name}!",
@@ -16,5 +51,112 @@
       "quit": "Quit"
     },
     "coming_soon": "'{label}' is coming soon!"
+  },
+  "practice_setup": {
+    "title": "Practice mode",
+    "subtitle": "Choose the tables you want to practice.",
+    "actions": {
+      "start": "Start practice"
+    }
+  },
+  "practice_session": {
+    "title": "Practice with {name}",
+    "tables": "Tables: {tables}",
+    "feedback": {
+      "almost": "Almost! {left} x {right} = {answer}"
+    }
+  },
+  "practice_summary": {
+    "title": "Great practice!",
+    "stats": {
+      "longest_streak": "Longest streak: {count}"
+    },
+    "tricky": {
+      "title": "Tricky tables",
+      "item": "Table {table}: {incorrect} wrong, {average}s on average",
+      "empty": "All tables look solid!"
+    },
+    "suggestion": {
+      "title": "Tip for next time",
+      "focus": "Spend a little more time on table {table}. You missed {incorrect} questions and it takes around {average}s. A quick retry helps!",
+      "speed": "Table {table} looks good! Try lowering your time a little (now {average}s).",
+      "default": "Great job! Mix different tables to keep challenging yourself."
+    },
+    "recent": {
+      "title": "Recent turns",
+      "correct_prefix": "OK",
+      "incorrect_prefix": "X",
+      "correct": "{prefix} {label} = {answer} ({duration}s)",
+      "incorrect": "{prefix} {label} != {given} -> {correct} ({duration}s)"
+    }
+  },
+  "test_setup": {
+    "title": "Test mode",
+    "subtitle": "Pick your challenge and press Start!",
+    "speed_header": "How fast will you go?",
+    "speed": {
+      "Slak": {
+        "label": "Snail",
+        "description": "Nice and easy"
+      },
+      "Schildpad": {
+        "label": "Turtle",
+        "description": "Steady racer"
+      },
+      "Haas": {
+        "label": "Hare",
+        "description": "Super speedy"
+      },
+      "Cheeta": {
+        "label": "Cheetah",
+        "description": "Ultimate challenge"
+      }
+    },
+    "questions_header": "How many questions",
+    "questions_option": "{amount} questions",
+    "actions": {
+      "start": "Start!"
+    }
+  },
+  "test_session": {
+    "title": "Test for {name} – {speed}",
+    "tables": "Tables: {tables}",
+    "feedback": {
+      "initial": "Good luck! Press ENTER to answer.",
+      "correct": [
+        "Yes!",
+        "Great!",
+        "Nice work!"
+      ],
+      "almost": "Almost! {left} x {right} = {answer}"
+    },
+    "progress": {
+      "position": "{current}/{total}"
+    },
+    "coins": {
+      "round": "Round coins: {amount}",
+      "total": "Total: {amount}"
+    }
+  },
+  "test_summary": {
+    "title_finished": "Test complete!",
+    "title_time_up": "Time's up!",
+    "subtitle": "Great job {name}! Speed: {speed}",
+    "stats": {
+      "time_used": "Time used: {used}s of {limit}s",
+      "coins_change": "Coins: {delta:+d} (total {total})"
+    },
+    "history": {
+      "title": "Mistakes to learn from",
+      "empty": "No mistakes! Awesome!",
+      "item": "{left} x {right} = {answer} (you said {given})"
+    },
+    "suggestion": {
+      "title": "Tip for next time",
+      "perfect": "Fantastic! Every table was perfect. Pick a new adventure!",
+      "focus": "Take another look at the {table} table. You missed {incorrect} and it takes about {average}s. A quick practice run will help!",
+      "speed": "You're very accurate! Try the {table} table again to get even faster. Right now it takes {average}s per question.",
+      "default": "Keep practising and mix tables to challenge yourself even more."
+    }
   }
 }

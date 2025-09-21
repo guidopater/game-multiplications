@@ -1,6 +1,41 @@
 {
   "common": {
-    "back": "Terug"
+    "back": "Terug",
+    "stop": "Stoppen",
+    "play_again": "Nog een keer!",
+    "return_menu": "Terug naar menu",
+    "tables": {
+      "header": "Voor welke tafels wil je gaan?",
+      "label": "Tafel {number}",
+      "hint_select": "Tip: druk op 'A' voor alles, 'W' om te wissen"
+    },
+    "feedback": {
+      "choose_table": "Kies minstens één tafel.",
+      "answer_hint": "Typ het antwoord en druk op ENTER",
+      "enter_answer": "Tik eerst een antwoord in.",
+      "digits_only": "Gebruik alleen cijfers.",
+      "correct_default": [
+        "Top!",
+        "Geweldig!",
+        "Lekker bezig!"
+      ]
+    },
+    "stats": {
+      "turns": "Beurten: {count}",
+      "correct": "Goed: {count}",
+      "incorrect": "Fout: {count}",
+      "streak": "Streak: {count}",
+      "accuracy": "Nauwkeurigheid: {percentage}%",
+      "answered": "Beantwoord: {answered} van {total}"
+    },
+    "coins": {
+      "round": "Munten ronde: {amount}",
+      "total": "Totaal: {amount}",
+      "potential": "Te verdienen: {coins} munten"
+    },
+    "time": {
+      "label": "Tijd: {value}"
+    }
   },
   "main_menu": {
     "greeting": "Hoi {name}!",
@@ -16,5 +51,112 @@
       "quit": "Afsluiten"
     },
     "coming_soon": "'{label}' komt binnenkort!"
+  },
+  "practice_setup": {
+    "title": "Oefenmodus",
+    "subtitle": "Kies de tafels waarop je wilt oefenen.",
+    "actions": {
+      "start": "Start oefenen"
+    }
+  },
+  "practice_session": {
+    "title": "Oefenen met {name}",
+    "tables": "Tafels: {tables}",
+    "feedback": {
+      "almost": "Bijna! {left} x {right} = {answer}"
+    }
+  },
+  "practice_summary": {
+    "title": "Goed geoefend!",
+    "stats": {
+      "longest_streak": "Langste streak: {count}"
+    },
+    "tricky": {
+      "title": "Lastige tafels",
+      "item": "Tafel {table}: {incorrect} fout, {average}s gemiddeld",
+      "empty": "Alle tafels zien er goed uit!"
+    },
+    "suggestion": {
+      "title": "Tip voor de volgende keer",
+      "focus": "Focus nog even op tafel {table}. Er gingen {incorrect} sommen mis en het kost gemiddeld {average}s. Een herhaling helpt!",
+      "speed": "Tafel {table} gaat goed! Probeer je tijd nog wat te verlagen (nu {average}s).",
+      "default": "Goed gedaan! Kies een mix van tafels om jezelf te blijven uitdagen."
+    },
+    "recent": {
+      "title": "Laatste beurten",
+      "correct_prefix": "OK",
+      "incorrect_prefix": "X",
+      "correct": "{prefix} {label} = {answer} ({duration}s)",
+      "incorrect": "{prefix} {label} != {given} -> {correct} ({duration}s)"
+    }
+  },
+  "test_setup": {
+    "title": "Testmodus",
+    "subtitle": "Kies jouw uitdaging en druk op Start!",
+    "speed_header": "Hoe snel ga je?",
+    "speed": {
+      "Slak": {
+        "label": "Slak",
+        "description": "Lekker rustig"
+      },
+      "Schildpad": {
+        "label": "Schildpad",
+        "description": "Rustig racen"
+      },
+      "Haas": {
+        "label": "Haas",
+        "description": "Supersnel"
+      },
+      "Cheeta": {
+        "label": "Cheeta",
+        "description": "Ultieme uitdaging"
+      }
+    },
+    "questions_header": "Hoeveel sommen",
+    "questions_option": "{amount} sommen",
+    "actions": {
+      "start": "Start!"
+    }
+  },
+  "test_session": {
+    "title": "Test voor {name} – {speed}",
+    "tables": "Tafels: {tables}",
+    "feedback": {
+      "initial": "Succes! Je kunt met ENTER antwoorden.",
+      "correct": [
+        "Yes!",
+        "Top!",
+        "Lekker bezig!"
+      ],
+      "almost": "Oei! {left} x {right} = {answer}"
+    },
+    "progress": {
+      "position": "{current}/{total}"
+    },
+    "coins": {
+      "round": "Munten ronde: {amount}",
+      "total": "Totaal: {amount}"
+    }
+  },
+  "test_summary": {
+    "title_finished": "Test afgerond!",
+    "title_time_up": "Tijd is op!",
+    "subtitle": "Goed gedaan {name}! Snelheid: {speed}",
+    "stats": {
+      "time_used": "Gebruikte tijd: {used}s van {limit}s",
+      "coins_change": "Munten: {delta:+d} (totaal {total})"
+    },
+    "history": {
+      "title": "Foutjes om van te leren",
+      "empty": "Geen foutjes! Geweldig!",
+      "item": "{left} x {right} = {answer} (jij zei {given})"
+    },
+    "suggestion": {
+      "title": "Tip voor de volgende keer",
+      "perfect": "Fantastisch! Alle tafels gingen vlekkeloos. Kies gerust een nieuw avontuur.",
+      "focus": "Neem de tafel van {table} nog even door. Er gingen {incorrect} sommen mis en het kost gemiddeld {average}s. Een oefenrondje maakt je supersnel!",
+      "speed": "Je bent heel precies! Misschien kun je de tafel van {table} nog eens oefenen om nog sneller te worden. Nu kost een som gemiddeld {average}s.",
+      "default": "Blijf oefenen en daag jezelf uit met een mix van tafels voor nog meer snelheid."
+    }
   }
 }

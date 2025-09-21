@@ -49,7 +49,7 @@ class PracticeSetupScene(Scene):
         }
         self.start_button = Button(
             pygame.Rect(0, 0, 260, 86),
-            "Start oefenen",
+            self.tr("practice_setup.actions.start", default="Start oefenen"),
             self.option_font,
             self.start_palette,
             text_color=settings.COLOR_TEXT_PRIMARY,
@@ -114,21 +114,30 @@ class PracticeSetupScene(Scene):
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         offset = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 100)
-        title = self.title_font.render("Oefenmodus", True, settings.COLOR_TEXT_PRIMARY)
+        title_text = self.tr("practice_setup.title", default="Oefenmodus")
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(offset, margin - 30)))
-        subtitle = self.helper_font.render("Kies de tafels waarop je wilt oefenen.", True, settings.COLOR_TEXT_DIM)
+        subtitle_text = self.tr(
+            "practice_setup.subtitle",
+            default="Kies de tafels waarop je wilt oefenen.",
+        )
+        subtitle = self.helper_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, subtitle.get_rect(topleft=(offset + 4, margin + 24)))
 
     def _draw_tables(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        header = self.section_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
+        header_text = self.tr(
+            "common.tables.header",
+            default="Voor welke tafels wil je gaan?",
+        )
+        header = self.section_font.render(header_text, True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(margin, margin + 70)))
 
         cols = 5
         button_size = (150, 64)
         spacing = 16
         start_x = margin
-        start_y = margin + 120
+        start_y = margin + 160
         self.table_rects = []
         mouse_pos = pygame.mouse.get_pos()
 
@@ -150,12 +159,25 @@ class PracticeSetupScene(Scene):
                 hover=rect.collidepoint(mouse_pos),
                 corner_radius=32,
             )
-            label = self.option_font.render(f"Tafel {value}", True, settings.COLOR_TEXT_PRIMARY)
+            label_text = self.tr(
+                "common.tables.label",
+                default="Tafel {number}",
+                number=value,
+            )
+            label = self.option_font.render(label_text, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(label, label.get_rect(center=face_rect.center))
             self.table_rects.append((rect, value))
 
-        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'W' om te wissen", True, settings.COLOR_TEXT_DIM)
-        surface.blit(hint, hint.get_rect(topleft=(margin, start_y + 3 * (button_size[1] + spacing) + 12)))
+        rows = (len(self.TABLE_VALUES) + cols - 1) // cols
+        grid_bottom = start_y + rows * (button_size[1] + spacing) - spacing
+
+        hint_text = self.tr(
+            "common.tables.hint_select",
+            default="Tip: druk op 'A' voor alles, 'W' om te wissen",
+        )
+        hint = self.helper_font.render(hint_text, True, settings.COLOR_TEXT_DIM)
+        hint_rect = hint.get_rect(topleft=(margin, grid_bottom + 20))
+        surface.blit(hint, hint_rect)
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -172,11 +194,15 @@ class PracticeSetupScene(Scene):
         height = 86
         rect = pygame.Rect(surface.get_width() - margin - width, surface.get_height() - margin - height, width, height)
         self.start_button.set_rect(rect)
+        self.start_button.label = self.tr("practice_setup.actions.start", default="Start oefenen")
         self.start_button.render(surface, hover=rect.collidepoint(pygame.mouse.get_pos()))
 
     def _start_practice(self) -> None:
         if not self.selected_tables:
-            self.feedback_message = "Kies minstens één tafel."
+            self.feedback_message = self.tr(
+                "common.feedback.choose_table",
+                default="Kies minstens één tafel.",
+            )
             self.feedback_timer = 2.5
             return
 
@@ -195,7 +221,8 @@ class PracticeSetupScene(Scene):
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_label = self.tr("common.back", default="Terug")
+        text = self.helper_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
         padding_y = 18
         width = text.get_width() + padding_x * 2

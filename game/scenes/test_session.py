@@ -36,6 +36,10 @@ class TestSessionScene(Scene):
         super().__init__(app)
         self.config = config
         self.speed_label = speed_label
+        self.speed_display = self.tr(
+            f"test_setup.speed.{speed_label}.label",
+            default=speed_label,
+        )
 
         self.title_font = settings.load_title_font(40)
         self.question_font = settings.load_font(110)
@@ -51,7 +55,11 @@ class TestSessionScene(Scene):
         self.history: List[Tuple[Question, str, bool]] = []
 
         self.elapsed = 0.0
-        self.feedback_message = "Succes! Je kunt met ENTER antwoorden."
+        self._initial_feedback = self.tr(
+            "test_session.feedback.initial",
+            default="Succes! Je kunt met ENTER antwoorden.",
+        )
+        self.feedback_message = self._initial_feedback
         self.feedback_timer = 3.0
         self.finished = False
         self.question_start_time = 0.0
@@ -75,9 +83,18 @@ class TestSessionScene(Scene):
             "border": (126, 98, 192),
             "shadow": (102, 78, 152),
         }
+        positive_default = self.tr_list(
+            "common.feedback.correct_default",
+            default=["Top!", "Geweldig!", "Lekker bezig!"],
+        )
+        self._positive_feedback = (
+            self.tr_list("test_session.feedback.correct", default=positive_default)
+            or positive_default
+        )
+
         self.back_button = Button(
             pygame.Rect(0, 0, 140, 52),
-            "Stop",
+            self.tr("common.stop", default="Stop"),
             self.helper_font,
             self.back_palette,
             text_color=settings.COLOR_TEXT_PRIMARY,
@@ -139,29 +156,59 @@ class TestSessionScene(Scene):
         profile = self.app.active_profile
         margin = settings.SCREEN_MARGIN
         title_x = margin + 200
-        title_text = self.title_font.render(
-            f"Test voor {profile.display_name} – {self.speed_label}",
-            True,
-            settings.COLOR_TEXT_PRIMARY,
+        title_label = self.tr(
+            "test_session.title",
+            default="Test voor {name} – {speed}",
+            name=profile.display_name,
+            speed=self.speed_display,
         )
+        title_text = self.title_font.render(title_label, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title_text, (title_x, margin - 20))
 
         tables_text = ", ".join(str(n) for n in self.config.tables)
-        subtitle = self.helper_font.render(f"Tafels: {tables_text}", True, settings.COLOR_TEXT_DIM)
+        tables_label = self.tr(
+            "test_session.tables",
+            default="Tafels: {tables}",
+            tables=tables_text,
+        )
+        subtitle = self.helper_font.render(tables_label, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, (title_x + 4, margin + 24))
 
         remaining = max(self.config.time_limit_seconds - self.elapsed, 0.0)
         minutes = int(remaining) // 60
         seconds = int(remaining) % 60
-        timer_text = self.count_font.render(f"Tijd: {minutes:02d}:{seconds:02d}", True, settings.COLOR_ACCENT_LIGHT)
+        timer_label = self.tr(
+            "common.time.label",
+            default="Tijd: {value}",
+            value=f"{minutes:02d}:{seconds:02d}",
+        )
+        timer_text = self.count_font.render(timer_label, True, settings.COLOR_ACCENT_LIGHT)
         timer_x = surface.get_width() - margin - timer_text.get_width() - 20
         surface.blit(timer_text, (timer_x, margin - 20))
 
         coin_icon = getattr(self.app, "coin_icon", None)
         base_total = profile.coins
         session_color = settings.COLOR_ACCENT if self.session_coins else settings.COLOR_TEXT_DIM
-        session_text = self.helper_font.render(f"Munten ronde: {self.session_coins}", True, session_color)
-        total_text = self.helper_font.render(f"Totaal: {base_total}", True, settings.COLOR_TEXT_PRIMARY)
+        session_label = self.tr(
+            "test_session.coins.round",
+            default=self.tr(
+                "common.coins.round",
+                default="Munten ronde: {amount}",
+                amount=self.session_coins,
+            ),
+            amount=self.session_coins,
+        )
+        session_text = self.helper_font.render(session_label, True, session_color)
+        total_label = self.tr(
+            "test_session.coins.total",
+            default=self.tr(
+                "common.coins.total",
+                default="Totaal: {amount}",
+                amount=base_total,
+            ),
+            amount=base_total,
+        )
+        total_text = self.helper_font.render(total_label, True, settings.COLOR_TEXT_PRIMARY)
         info_x = surface.get_width() - margin - 220
         info_y = margin + 10
         if coin_icon:
@@ -193,17 +240,38 @@ class TestSessionScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_ACCENT, input_box, width=3, border_radius=22)
         answer_text = self.count_font.render(self.input_value or "?", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(answer_text, answer_text.get_rect(center=input_box.center))
-        hint = self.helper_font.render("Typ het antwoord en druk op ENTER", True, settings.COLOR_TEXT_DIM)
+        hint_label = self.tr(
+            "common.feedback.answer_hint",
+            default="Typ het antwoord en druk op ENTER",
+        )
+        hint = self.helper_font.render(hint_label, True, settings.COLOR_TEXT_DIM)
         surface.blit(hint, hint.get_rect(center=(input_box.centerx, input_box.bottom + 36)))
 
     def _draw_progress(self, surface: pygame.Surface) -> None:
         total = len(self.questions)
-        progress_text = self.count_font.render(f"{self.current_index + 1 if self.current_index < total else total}/{total}", True, settings.COLOR_TEXT_PRIMARY)
+        current = self.current_index + 1 if self.current_index < total else total
+        progress_label = self.tr(
+            "test_session.progress.position",
+            default="{current}/{total}",
+            current=current,
+            total=total,
+        )
+        progress_text = self.count_font.render(progress_label, True, settings.COLOR_TEXT_PRIMARY)
         margin = settings.SCREEN_MARGIN
         surface.blit(progress_text, (margin, surface.get_height() - margin - 120))
 
-        correct_text = self.helper_font.render(f"Goed: {self.correct}", True, settings.COLOR_SELECTION)
-        wrong_text = self.helper_font.render(f"Fout: {self.incorrect}", True, settings.COLOR_ACCENT_LIGHT)
+        correct_label = self.tr(
+            "common.stats.correct",
+            default="Goed: {count}",
+            count=self.correct,
+        )
+        wrong_label = self.tr(
+            "common.stats.incorrect",
+            default="Fout: {count}",
+            count=self.incorrect,
+        )
+        correct_text = self.helper_font.render(correct_label, True, settings.COLOR_SELECTION)
+        wrong_text = self.helper_font.render(wrong_label, True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(correct_text, (margin, surface.get_height() - margin - 80))
         surface.blit(wrong_text, (margin + 140, surface.get_height() - margin - 80))
 
@@ -232,7 +300,13 @@ class TestSessionScene(Scene):
         if self.current_index >= len(self.questions):
             return
         if not self.input_value:
-            self.feedback_message = "Tik eerst een antwoord in."
+            self.feedback_message = self.tr(
+                "test_session.feedback.enter_answer",
+                default=self.tr(
+                    "common.feedback.enter_answer",
+                    default="Tik eerst een antwoord in.",
+                ),
+            )
             self.feedback_timer = 1.5
             return
 
@@ -240,7 +314,13 @@ class TestSessionScene(Scene):
         try:
             guess = int(self.input_value)
         except ValueError:
-            self.feedback_message = "Gebruik alleen cijfers."
+            self.feedback_message = self.tr(
+                "test_session.feedback.digits_only",
+                default=self.tr(
+                    "common.feedback.digits_only",
+                    default="Gebruik alleen cijfers.",
+                ),
+            )
             self.feedback_timer = 1.5
             self.input_value = ""
             return
@@ -259,13 +339,23 @@ class TestSessionScene(Scene):
 
         if is_correct:
             self.correct += 1
-            self.feedback_message = random.choice(["Yes!", "Top!", "Lekker bezig!"])
+            messages = self.tr_list(
+                "test_session.feedback.correct",
+                default=self._positive_feedback,
+            ) or self._positive_feedback
+            self.feedback_message = random.choice(messages)
             self.feedback_timer = 1.0
             self.app.play_sound("good")
             self._spawn_answer_effect(question.as_text())
         else:
             self.incorrect += 1
-            self.feedback_message = f"Oei! {question.left} x {question.right} = {question.answer}"
+            self.feedback_message = self.tr(
+                "test_session.feedback.almost",
+                default="Oei! {left} x {right} = {answer}",
+                left=question.left,
+                right=question.right,
+                answer=question.answer,
+            )
             self.feedback_timer = 2.5
             self.app.play_sound("wrong")
 
@@ -369,7 +459,9 @@ class TestSessionScene(Scene):
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_label = self.tr("common.back", default="Terug")
+        self.back_button.label = back_label
+        text = self.helper_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
         padding_y = 18
         width = text.get_width() + padding_x * 2

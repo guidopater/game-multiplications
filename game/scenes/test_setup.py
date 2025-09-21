@@ -96,7 +96,7 @@ class TestSetupScene(Scene):
         }
         self.start_button = Button(
             pygame.Rect(0, 0, 260, 86),
-            "Start!",
+            self.tr("test_setup.actions.start", default="Start!"),
             self.button_font,
             self.palette_start,
             text_color=settings.COLOR_TEXT_PRIMARY,
@@ -175,9 +175,14 @@ class TestSetupScene(Scene):
         margin = settings.SCREEN_MARGIN
         back_right = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 90)
         left_x = back_right
-        title = self.title_font.render("Testmodus", True, settings.COLOR_TEXT_PRIMARY)
+        title_text = self.tr("test_setup.title", default="Testmodus")
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(left_x, margin + 10)))
-        subtitle = self.helper_font.render("Kies jouw uitdaging en druk op Start!", True, settings.COLOR_TEXT_DIM)
+        subtitle_text = self.tr(
+            "test_setup.subtitle",
+            default="Kies jouw uitdaging en druk op Start!",
+        )
+        subtitle = self.helper_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, subtitle.get_rect(topleft=(left_x + 6, margin + 68)))
 
     def _draw_tables(self, surface: pygame.Surface) -> None:
@@ -185,7 +190,11 @@ class TestSetupScene(Scene):
         header_x = margin + 30
         header_y = margin + 120
         header_font = settings.load_title_font(38)
-        header = header_font.render("Voor welke tafels wil je gaan?", True, settings.COLOR_ACCENT_LIGHT)
+        header_text = self.tr(
+            "common.tables.header",
+            default="Voor welke tafels wil je gaan?",
+        )
+        header = header_font.render(header_text, True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(header_x, header_y)))
         self.table_header_top = header_y
 
@@ -215,7 +224,12 @@ class TestSetupScene(Scene):
                 hover=rect.collidepoint(mouse_pos),
                 corner_radius=32,
             )
-            label = self.option_font.render(f"Tafel {value}", True, settings.COLOR_TEXT_PRIMARY)
+            label_text = self.tr(
+                "common.tables.label",
+                default="Tafel {number}",
+                number=value,
+            )
+            label = self.option_font.render(label_text, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(label, label.get_rect(center=face_rect.center))
             self.table_rects.append((rect, value))
 
@@ -226,7 +240,11 @@ class TestSetupScene(Scene):
             self.tables_right = start_x
 
         rows = (len(self.TABLE_VALUES) + cols - 1) // cols
-        hint = self.helper_font.render("Tip: druk op 'A' voor alles, 'W' om te wissen", True, settings.COLOR_TEXT_DIM)
+        hint_text = self.tr(
+            "common.tables.hint_select",
+            default="Tip: druk op 'A' voor alles, 'W' om te wissen",
+        )
+        hint = self.helper_font.render(hint_text, True, settings.COLOR_TEXT_DIM)
         hint_y = start_y + rows * (button_size[1] + spacing) + 12
         surface.blit(hint, hint.get_rect(topleft=(header_x, hint_y)))
         self.tables_bottom = hint_y + hint.get_height()
@@ -235,7 +253,8 @@ class TestSetupScene(Scene):
         margin = settings.SCREEN_MARGIN
         header_y = self.tables_bottom + 40
         header_font = settings.load_title_font(38)
-        header = header_font.render("Hoe snel ga je?", True, settings.COLOR_ACCENT_LIGHT)
+        header_text = self.tr("test_setup.speed_header", default="Hoe snel ga je?")
+        header = header_font.render(header_text, True, settings.COLOR_ACCENT_LIGHT)
         header_pos = header.get_rect(topleft=(margin + 30, header_y))
         surface.blit(header, header_pos)
         self.speed_rects = []
@@ -273,8 +292,22 @@ class TestSetupScene(Scene):
                     scaled.set_alpha(150)
                 surface.blit(scaled, scaled.get_rect(center=face_rect.center))
             else:
-                label = self.option_font.render(f"{option.animal} {option.label}", True, settings.COLOR_TEXT_PRIMARY)
-                surface.blit(label, label.get_rect(center=face_rect.center))
+                speed_label = self.tr(
+                    f"test_setup.speed.{option.label}.label",
+                    default=option.label,
+                )
+                description = self.tr(
+                    f"test_setup.speed.{option.label}.description",
+                    default=option.description,
+                )
+                text = self.option_font.render(f"{option.animal} {speed_label}", True, settings.COLOR_TEXT_PRIMARY)
+                surface.blit(text, text.get_rect(center=face_rect.center))
+                if description:
+                    desc_surface = self.helper_font.render(description, True, settings.COLOR_TEXT_DIM)
+                    surface.blit(
+                        desc_surface,
+                        desc_surface.get_rect(midtop=(face_rect.centerx, face_rect.bottom - 28)),
+                    )
 
             self.speed_rects.append((rect, index))
 
@@ -286,7 +319,8 @@ class TestSetupScene(Scene):
         base_x = self.tables_right + 80
         header_top = getattr(self, "table_header_top", self.tables_bottom)
         header_font = settings.load_title_font(38)
-        header = header_font.render("Hoeveel sommen", True, settings.COLOR_ACCENT_LIGHT)
+        header_text = self.tr("test_setup.questions_header", default="Hoeveel sommen")
+        header = header_font.render(header_text, True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(header, header.get_rect(topleft=(base_x, header_top)))
         base_y = header_top + 60
         self.question_rects = []
@@ -298,7 +332,12 @@ class TestSetupScene(Scene):
             is_selected = index == self.selected_question_index
             palette = self.palette_question_active if is_selected else self.palette_question_inactive
             face_rect = draw_glossy_button(surface, rect, palette, selected=is_selected, hover=rect.collidepoint(mouse_pos))
-            label = self.option_font.render(f"{amount} sommen", True, settings.COLOR_TEXT_PRIMARY)
+            label_text = self.tr(
+                "test_setup.questions_option",
+                default="{amount} sommen",
+                amount=amount,
+            )
+            label = self.option_font.render(label_text, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(label, label.get_rect(center=face_rect.center))
             self.question_rects.append((rect, index))
 
@@ -310,9 +349,15 @@ class TestSetupScene(Scene):
         rect = pygame.Rect(base_x, surface.get_height() - margin - height, width, height)
         hover = rect.collidepoint(pygame.mouse.get_pos())
         self.start_button.set_rect(rect)
+        self.start_button.label = self.tr("test_setup.actions.start", default="Start!")
         self.start_button.render(surface, hover=hover)
         estimate = self._estimate_max_reward()
-        estimate_text = self.helper_font.render(f"Te verdienen: {estimate} munten", True, settings.COLOR_TEXT_DIM)
+        estimate_text_raw = self.tr(
+            "common.coins.potential",
+            default="Te verdienen: {coins} munten",
+            coins=estimate,
+        )
+        estimate_text = self.helper_font.render(estimate_text_raw, True, settings.COLOR_TEXT_DIM)
         surface.blit(estimate_text, estimate_text.get_rect(center=(rect.centerx, rect.top - 24)))
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
@@ -326,7 +371,10 @@ class TestSetupScene(Scene):
 
     def _start_test(self) -> None:
         if not self.selected_tables:
-            self.feedback_message = "Kies minstens \u00e9\u00e9n tafel."
+            self.feedback_message = self.tr(
+                "common.feedback.choose_table",
+                default="Kies minstens één tafel.",
+            )
             self.feedback_timer = 2.5
             return
 
@@ -358,7 +406,8 @@ class TestSetupScene(Scene):
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_label = self.tr("common.back", default="Terug")
+        text = self.helper_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
         padding_y = 18
         width = text.get_width() + padding_x * 2

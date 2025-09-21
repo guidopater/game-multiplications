@@ -51,7 +51,14 @@ class PracticeSessionScene(Scene):
         self.elapsed = 0.0
         self.question_start_time = 0.0
 
-        self.feedback_message = "Typ het antwoord en druk op ENTER"
+        self._initial_prompt = self.tr(
+            "practice_session.feedback.initial",
+            default=self.tr(
+                "common.feedback.answer_hint",
+                default="Typ het antwoord en druk op ENTER",
+            ),
+        )
+        self.feedback_message = self._initial_prompt
         self.feedback_timer = 0.0
 
         self.input_value = ""
@@ -62,6 +69,18 @@ class PracticeSessionScene(Scene):
         self.current_question: PracticeQuestion = self._create_question()
         self.awaiting_retry = False
 
+        default_positive = self.tr_list(
+            "common.feedback.correct_default",
+            default=["Top!", "Geweldig!", "Lekker bezig!"],
+        )
+        self._positive_feedback_options = (
+            self.tr_list(
+                "practice_session.feedback.correct",
+                default=default_positive,
+            )
+            or default_positive
+        )
+
         self.back_palette = {
             "top": (216, 196, 255),
             "bottom": (176, 148, 227),
@@ -70,7 +89,7 @@ class PracticeSessionScene(Scene):
         }
         self.back_button = Button(
             pygame.Rect(0, 0, 160, 52),
-            "Stoppen",
+            self.tr("common.stop", default="Stoppen"),
             self.helper_font,
             self.back_palette,
             text_color=settings.COLOR_TEXT_PRIMARY,
@@ -102,7 +121,7 @@ class PracticeSessionScene(Scene):
         if self.feedback_timer > 0:
             self.feedback_timer = max(self.feedback_timer - delta_time, 0)
             if self.feedback_timer == 0:
-                self.feedback_message = "Typ het antwoord en druk op ENTER"
+                self.feedback_message = self._initial_prompt
 
     # Rendering ------------------------------------------------------
     def render(self, surface: pygame.Surface) -> None:
@@ -120,15 +139,21 @@ class PracticeSessionScene(Scene):
         profile = self.app.active_profile
         margin = settings.SCREEN_MARGIN
         back_right = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 40)
-        title_text = self.title_font.render(
-            f"Oefenen met {profile.display_name}",
-            True,
-            settings.COLOR_TEXT_PRIMARY,
+        title_label = self.tr(
+            "practice_session.title",
+            default="Oefenen met {name}",
+            name=profile.display_name,
         )
+        title_text = self.title_font.render(title_label, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title_text, (back_right, margin - 20))
 
         tables_text = ", ".join(str(n) for n in self.config.tables)
-        subtitle = self.helper_font.render(f"Tafels: {tables_text}", True, settings.COLOR_TEXT_DIM)
+        subtitle_label = self.tr(
+            "practice_session.tables",
+            default="Tafels: {tables}",
+            tables=tables_text,
+        )
+        subtitle = self.helper_font.render(subtitle_label, True, settings.COLOR_TEXT_DIM)
         surface.blit(subtitle, (back_right + 4, margin + 24))
 
     def _draw_question(self, surface: pygame.Surface) -> None:
@@ -142,17 +167,60 @@ class PracticeSessionScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_ACCENT, input_box, width=3, border_radius=22)
         answer_text = self.count_font.render(self.input_value or "?", True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(answer_text, answer_text.get_rect(center=input_box.center))
-        hint = self.helper_font.render("Typ het antwoord en druk op ENTER", True, settings.COLOR_TEXT_DIM)
+        hint_text = self.tr(
+            "practice_session.input_hint",
+            default=self.tr(
+                "common.feedback.answer_hint",
+                default="Typ het antwoord en druk op ENTER",
+            ),
+        )
+        hint = self.helper_font.render(hint_text, True, settings.COLOR_TEXT_DIM)
         surface.blit(hint, hint.get_rect(center=(input_box.centerx, input_box.bottom + 36)))
 
     def _draw_progress(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        progress_text = self.count_font.render(f"Beurten: {self.total_attempts}", True, settings.COLOR_TEXT_PRIMARY)
+        turns_text = self.tr(
+            "practice_session.progress.turns",
+            default=self.tr(
+                "common.stats.turns",
+                default="Beurten: {count}",
+                count=self.total_attempts,
+            ),
+            count=self.total_attempts,
+        )
+        progress_text = self.count_font.render(turns_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(progress_text, (margin, surface.get_height() - margin - 100))
 
-        correct_text = self.helper_font.render(f"Goed: {self.correct_answers}", True, settings.COLOR_SELECTION)
-        wrong_text = self.helper_font.render(f"Fout: {self.total_attempts - self.correct_answers}", True, settings.COLOR_ACCENT_LIGHT)
-        streak_text = self.helper_font.render(f"Streak: {self.streak}", True, settings.COLOR_ACCENT_LIGHT)
+        correct_label = self.tr(
+            "practice_session.progress.correct",
+            default=self.tr(
+                "common.stats.correct",
+                default="Goed: {count}",
+                count=self.correct_answers,
+            ),
+            count=self.correct_answers,
+        )
+        wrong_label = self.tr(
+            "practice_session.progress.wrong",
+            default=self.tr(
+                "common.stats.incorrect",
+                default="Fout: {count}",
+                count=self.total_attempts - self.correct_answers,
+            ),
+            count=self.total_attempts - self.correct_answers,
+        )
+        streak_label = self.tr(
+            "practice_session.progress.streak",
+            default=self.tr(
+                "common.stats.streak",
+                default="Streak: {count}",
+                count=self.streak,
+            ),
+            count=self.streak,
+        )
+        correct_text = self.helper_font.render(correct_label, True, settings.COLOR_SELECTION)
+        wrong_text = self.helper_font.render(wrong_label, True, settings.COLOR_ACCENT_LIGHT)
+        streak_text = self.helper_font.render(streak_label, True, settings.COLOR_ACCENT_LIGHT)
         surface.blit(correct_text, (margin, surface.get_height() - margin - 60))
         surface.blit(wrong_text, (margin + 160, surface.get_height() - margin - 60))
         surface.blit(streak_text, (margin, surface.get_height() - margin - 30))
@@ -168,7 +236,9 @@ class PracticeSessionScene(Scene):
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        text = self.helper_font.render("Stoppen", True, settings.COLOR_TEXT_PRIMARY)
+        stop_label = self.tr("common.stop", default="Stoppen")
+        self.back_button.label = stop_label
+        text = self.helper_font.render(stop_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
         padding_y = 18
         width = text.get_width() + padding_x * 2
@@ -212,7 +282,13 @@ class PracticeSessionScene(Scene):
 
     def _submit_answer(self) -> None:
         if not self.input_value:
-            self.feedback_message = "Tik eerst een antwoord in."
+            self.feedback_message = self.tr(
+                "practice_session.feedback.enter_answer",
+                default=self.tr(
+                    "common.feedback.enter_answer",
+                    default="Tik eerst een antwoord in.",
+                ),
+            )
             self.feedback_timer = 1.5
             return
 
@@ -220,7 +296,13 @@ class PracticeSessionScene(Scene):
         try:
             guess = int(self.input_value)
         except ValueError:
-            self.feedback_message = "Gebruik alleen cijfers."
+            self.feedback_message = self.tr(
+                "practice_session.feedback.digits_only",
+                default=self.tr(
+                    "common.feedback.digits_only",
+                    default="Gebruik alleen cijfers.",
+                ),
+            )
             self.feedback_timer = 1.5
             self.input_value = ""
             return
@@ -242,13 +324,23 @@ class PracticeSessionScene(Scene):
         if is_correct:
             self.correct_answers += 1
             self.streak += 1
-            self.feedback_message = random.choice(["Top!", "Geweldig!", "Lekker bezig!"])
+            messages = self.tr_list(
+                "practice_session.feedback.correct",
+                default=self._positive_feedback_options,
+            )
+            self.feedback_message = random.choice(messages or self._positive_feedback_options)
             self.feedback_timer = 1.0
             self._spawn_answer_effect(question.as_text())
             self._next_question()
         else:
             self.streak = 0
-            self.feedback_message = f"Bijna! {question.left} x {question.right} = {question.answer}"
+            self.feedback_message = self.tr(
+                "practice_session.feedback.almost",
+                default="Bijna! {left} x {right} = {answer}",
+                left=question.left,
+                right=question.right,
+                answer=question.answer,
+            )
             self.feedback_timer = 2.5
             self.awaiting_retry = True
 

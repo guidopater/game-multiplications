@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Sequence
 
 import pygame
 
@@ -76,6 +76,38 @@ class Scene:
 
     def on_back(self) -> None:
         """Override to implement back navigation."""
+
+    # Translation helpers --------------------------------------------
+    def tr(self, key: str, default: str | None = None, **kwargs: object) -> str:
+        translator = getattr(self.app, "translator", None)
+        if translator is not None:
+            translated = translator.gettext(key, **kwargs)
+            if translated != key:
+                return translated
+        if default is not None:
+            try:
+                return default.format(**kwargs)
+            except (KeyError, ValueError):
+                return default
+        if kwargs:
+            try:
+                return key.format(**kwargs)
+            except (KeyError, ValueError):
+                return key
+        return key
+
+    def tr_list(self, key: str, default: Sequence[str] | None = None) -> list[str]:
+        translator = getattr(self.app, "translator", None)
+        if translator is not None:
+            values = translator.get_list(key)
+            if values:
+                if len(values) == 1 and values[0] == key:
+                    values = []
+                else:
+                    return values
+        if default is not None:
+            return list(default)
+        return []
 
 
 __all__ = ["Scene"]

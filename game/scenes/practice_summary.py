@@ -50,13 +50,13 @@ class PracticeSummaryScene(Scene):
             "shadow": (102, 78, 152),
         }
         self.button_palettes = {
-            "Nog een keer!": {
+            "retry": {
                 "top": (255, 170, 59),
                 "bottom": (244, 110, 34),
                 "border": (172, 78, 23),
                 "shadow": (138, 62, 19),
             },
-            "Terug naar menu": {
+            "menu": {
                 "top": (73, 195, 86),
                 "bottom": (40, 158, 66),
                 "border": (31, 124, 50),
@@ -99,19 +99,71 @@ class PracticeSummaryScene(Scene):
     def _draw_title(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         back_right = (self.back_button_rect.right + 40) if self.back_button_rect else (margin + 40)
-        title = self.title_font.render("Goed geoefend!", True, settings.COLOR_TEXT_PRIMARY)
+        title_text = self.tr(
+            "practice_summary.title",
+            default="Goed geoefend!",
+        )
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(title, title.get_rect(topleft=(back_right, margin - 30)))
 
     def _draw_stats(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        header_font = settings.load_title_font(32)
         accuracy = (self.correct / self.total_attempts) * 100 if self.total_attempts else 0.0
-        lines = [
-            self.stat_font.render(f"Beurten: {self.total_attempts}", True, settings.COLOR_TEXT_PRIMARY),
-            self.stat_font.render(f"Goed: {self.correct}", True, settings.COLOR_SELECTION),
-            self.stat_font.render(f"Nauwkeurigheid: {accuracy:.0f}%", True, settings.COLOR_TEXT_PRIMARY),
-            self.helper_font.render(f"Langste streak: {self.streak}", True, settings.COLOR_TEXT_DIM),
+        stats_lines = [
+            (
+                self.stat_font,
+                self.tr(
+                    "practice_summary.stats.turns",
+                    default=self.tr(
+                        "common.stats.turns",
+                        default="Beurten: {count}",
+                        count=self.total_attempts,
+                    ),
+                    count=self.total_attempts,
+                ),
+                settings.COLOR_TEXT_PRIMARY,
+            ),
+            (
+                self.stat_font,
+                self.tr(
+                    "practice_summary.stats.correct",
+                    default=self.tr(
+                        "common.stats.correct",
+                        default="Goed: {count}",
+                        count=self.correct,
+                    ),
+                    count=self.correct,
+                ),
+                settings.COLOR_SELECTION,
+            ),
+            (
+                self.stat_font,
+                self.tr(
+                    "practice_summary.stats.accuracy",
+                    default=self.tr(
+                        "common.stats.accuracy",
+                        default="Nauwkeurigheid: {percentage}%",
+                        percentage=f"{accuracy:.0f}",
+                    ),
+                    percentage=f"{accuracy:.0f}",
+                ),
+                settings.COLOR_TEXT_PRIMARY,
+            ),
+            (
+                self.helper_font,
+                self.tr(
+                    "practice_summary.stats.longest_streak",
+                    default=self.tr(
+                        "common.stats.streak",
+                        default="Streak: {count}",
+                        count=self.streak,
+                    ),
+                    count=self.streak,
+                ),
+                settings.COLOR_TEXT_DIM,
+            ),
         ]
+        lines = [font.render(text, True, color) for font, text, color in stats_lines]
         max_width = max(line.get_width() for line in lines)
         card_width = max(420, max_width + 64)
         card_height = 40 + sum(line.get_height() + 16 for line in lines)
@@ -127,7 +179,11 @@ class PracticeSummaryScene(Scene):
     def _draw_history(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
         header_font = settings.load_title_font(32)
-        header = header_font.render("Lastige tafels", True, settings.COLOR_TEXT_PRIMARY)
+        header_text = self.tr(
+            "practice_summary.tricky.title",
+            default="Lastige tafels",
+        )
+        header = header_font.render(header_text, True, settings.COLOR_TEXT_PRIMARY)
 
         stats = sorted(
             self.table_stats.items(),
@@ -141,14 +197,21 @@ class PracticeSummaryScene(Scene):
             incorrect = int(data["incorrect"])
             avg_time = data["total_time"] / data["questions"]
             color = settings.COLOR_ACCENT_LIGHT if incorrect else settings.COLOR_TEXT_DIM
-            text = self.helper_font.render(
-                f"Tafel {table}: {incorrect} fout, {avg_time:.1f}s gemiddeld",
-                True,
-                color,
+            text_value = self.tr(
+                "practice_summary.tricky.item",
+                default="Tafel {table}: {incorrect} fout, {average}s gemiddeld",
+                table=table,
+                incorrect=incorrect,
+                average=f"{avg_time:.1f}",
             )
+            text = self.helper_font.render(text_value, True, color)
             lines.append(text)
         if not lines:
-            lines = [self.helper_font.render("Alle tafels zien er goed uit!", True, settings.COLOR_SELECTION)]
+            empty_text = self.tr(
+                "practice_summary.tricky.empty",
+                default="Alle tafels zien er goed uit!",
+            )
+            lines = [self.helper_font.render(empty_text, True, settings.COLOR_SELECTION)]
 
         max_width = max(header.get_width(), max(line.get_width() for line in lines))
         area_width = max(420, max_width + 64)
@@ -178,7 +241,11 @@ class PracticeSummaryScene(Scene):
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=28)
 
         heading_font = settings.load_title_font(32)
-        heading = heading_font.render("Tip voor de volgende keer", True, settings.COLOR_TEXT_PRIMARY)
+        heading_text = self.tr(
+            "practice_summary.suggestion.title",
+            default="Tip voor de volgende keer",
+        )
+        heading = heading_font.render(heading_text, True, settings.COLOR_TEXT_PRIMARY)
         surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 20)))
 
         y = card.top + 68
@@ -193,19 +260,21 @@ class PracticeSummaryScene(Scene):
         retry_rect = pygame.Rect(surface.get_width() - margin - 300, surface.get_height() - margin - 86, 300, 86)
         menu_rect = pygame.Rect(surface.get_width() - margin - 620, surface.get_height() - margin - 86, 300, 86)
 
+        retry_label = self.tr("common.play_again", default="Nog een keer!")
         retry_button = Button(
             retry_rect,
-            "Nog een keer!",
+            retry_label,
             self.button_font,
-            self.button_palettes["Nog een keer!"],
+            self.button_palettes["retry"],
             text_color=settings.COLOR_TEXT_PRIMARY,
             callback=self._restart_practice,
         )
+        menu_label = self.tr("common.return_menu", default="Terug naar menu")
         menu_button = Button(
             menu_rect,
-            "Terug naar menu",
+            menu_label,
             self.button_font,
-            self.button_palettes["Terug naar menu"],
+            self.button_palettes["menu"],
             text_color=settings.COLOR_TEXT_PRIMARY,
             callback=self._handle_back_action,
         )
@@ -239,18 +308,41 @@ class PracticeSummaryScene(Scene):
         rows: List[pygame.Surface] = []
         for question, answer, is_correct, duration in recent:
             label = question.as_text() if hasattr(question, "as_text") else str(question)
-            prefix = "OK" if is_correct else "X"
+            prefix = self.tr(
+                "practice_summary.recent.correct_prefix" if is_correct else "practice_summary.recent.incorrect_prefix",
+                default="OK" if is_correct else "X",
+            )
+            duration_text = f"{duration:.1f}"
             if is_correct:
-                text = f"{prefix} {label} = {answer} ({duration:.1f}s)"
+                text_value = self.tr(
+                    "practice_summary.recent.correct",
+                    default="{prefix} {label} = {answer} ({duration}s)",
+                    prefix=prefix,
+                    label=label,
+                    answer=answer,
+                    duration=duration_text,
+                )
             else:
                 correct_value = question.answer if hasattr(question, "answer") else "?"
-                text = f"{prefix} {label} != {answer} -> {correct_value} ({duration:.1f}s)"
+                text_value = self.tr(
+                    "practice_summary.recent.incorrect",
+                    default="{prefix} {label} != {given} -> {correct} ({duration}s)",
+                    prefix=prefix,
+                    label=label,
+                    given=answer,
+                    correct=correct_value,
+                    duration=duration_text,
+                )
             color = settings.COLOR_SELECTION if is_correct else settings.COLOR_TEXT_PRIMARY
-            rows.append(self.helper_font.render(text, True, color))
+            rows.append(self.helper_font.render(text_value, True, color))
 
         width = max(row.get_width() for row in rows)
         header_font = settings.load_title_font(28)
-        header = header_font.render("Laatste beurten", True, settings.COLOR_TEXT_PRIMARY)
+        header_text = self.tr(
+            "practice_summary.recent.title",
+            default="Laatste beurten",
+        )
+        header = header_font.render(header_text, True, settings.COLOR_TEXT_PRIMARY)
         card_width = max(420, width + 56)
         card_height = header.get_height() + 36 + len(rows) * 32
         card = pygame.Rect(
@@ -270,7 +362,8 @@ class PracticeSummaryScene(Scene):
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        text = self.helper_font.render("Terug", True, settings.COLOR_TEXT_PRIMARY)
+        back_label = self.tr("common.back", default="Terug")
+        text = self.helper_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
         padding_y = 18
         width = text.get_width() + padding_x * 2
@@ -295,15 +388,29 @@ class PracticeSummaryScene(Scene):
         )
         for table, stats in tricky:
             if stats["incorrect"]:
-                return (
-                    f"Focus nog even op tafel {table}. Er gingen {int(stats['incorrect'])} sommen mis en het kost gemiddeld"
-                    f" {stats['total_time']/max(stats['questions'], 1):.1f}s. Een herhaling helpt!"
+                avg = stats['total_time'] / max(stats['questions'], 1)
+                return self.tr(
+                    "practice_summary.suggestion.focus",
+                    default=(
+                        "Focus nog even op tafel {table}. Er gingen {incorrect} sommen mis en het kost gemiddeld {average}s. Een herhaling helpt!"
+                    ),
+                    table=table,
+                    incorrect=int(stats['incorrect']),
+                    average=f"{avg:.1f}",
                 )
         if tricky:
             table, stats = tricky[0]
             avg = stats['total_time'] / max(stats['questions'], 1)
-            return f"Tafel {table} gaat goed! Probeer je tijd nog wat te verlagen (nu {avg:.1f}s)."
-        return "Goed gedaan! Kies een mix van tafels om jezelf te blijven uitdagen."
+            return self.tr(
+                "practice_summary.suggestion.speed",
+                default="Tafel {table} gaat goed! Probeer je tijd nog wat te verlagen (nu {average}s).",
+                table=table,
+                average=f"{avg:.1f}",
+            )
+        return self.tr(
+            "practice_summary.suggestion.default",
+            default="Goed gedaan! Kies een mix van tafels om jezelf te blijven uitdagen.",
+        )
 
     @staticmethod
     def _wrap_text(text: str, max_width: int, font: pygame.font.Font) -> List[str]:
