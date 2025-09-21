@@ -15,7 +15,8 @@ from .base import Scene
 
 @dataclass(frozen=True)
 class MenuOption:
-    label: str
+    label_key: str
+    default_label: str
     action: str
 
 
@@ -33,11 +34,11 @@ class MainMenuScene(Scene):
         self.profile_font = settings.load_font(20)
 
         self.options: List[MenuOption] = [
-            MenuOption(label="Oefenen", action="practice"),
-            MenuOption(label="Testen", action="test"),
-            MenuOption(label="Hoe deed je het?", action="leaderboard"),
-            MenuOption(label="Instellingen", action="settings"),
-            MenuOption(label="Afsluiten", action="quit"),
+            MenuOption("main_menu.options.practice", "Oefenen", "practice"),
+            MenuOption("main_menu.options.test", "Testen", "test"),
+            MenuOption("main_menu.options.progress", "Hoe deed je het?", "leaderboard"),
+            MenuOption("main_menu.options.settings", "Instellingen", "settings"),
+            MenuOption("main_menu.options.quit", "Afsluiten", "quit"),
         ]
         self.selected_index = 0
         self.buttons: List[Button] = []
@@ -149,8 +150,17 @@ class MainMenuScene(Scene):
         profile = self.app.active_profile
         margin = settings.SCREEN_MARGIN
         left_x = margin
-        title = self.title_font.render(f"Hoi {profile.display_name}!", True, settings.COLOR_TEXT_PRIMARY)
-        subtitle = self.subtitle_font.render("Waar heb je zin in vandaag?", True, settings.COLOR_TEXT_DIM)
+        title_text = self._gettext(
+            "main_menu.greeting",
+            default="Hoi {name}!",
+            name=profile.display_name,
+        )
+        subtitle_text = self._gettext(
+            "main_menu.subtitle",
+            default="Waar heb je zin in vandaag?",
+        )
+        title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
+        subtitle = self.subtitle_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
 
         title_rect = title.get_rect()
         title_rect.topleft = (left_x, margin + 10)
@@ -168,6 +178,7 @@ class MainMenuScene(Scene):
         mouse_pos = pygame.mouse.get_pos()
 
         for index, button in enumerate(self.buttons):
+            option = self.options[index]
             base_rect = pygame.Rect(
                 menu_x,
                 base_y + index * (button_height + self.button_spacing),
@@ -176,6 +187,7 @@ class MainMenuScene(Scene):
             )
 
             button.set_rect(base_rect)
+            button.label = self._gettext(option.label_key, default=option.default_label)
             is_selected = index == self.selected_index
             is_hover = base_rect.collidepoint(mouse_pos)
             button.render(surface, hover=is_hover, selected=is_selected)
@@ -205,7 +217,11 @@ class MainMenuScene(Scene):
         origin_x = surface.get_width() - margin - total_width
         origin_y = surface.get_height() - margin - size
 
-        label = self.feedback_font.render("Wie speelt er?", True, settings.COLOR_TEXT_DIM)
+        label_text = self._gettext(
+            "main_menu.profile_selector.label",
+            default="Wie speelt er?",
+        )
+        label = self.feedback_font.render(label_text, True, settings.COLOR_TEXT_DIM)
         label_rect = label.get_rect(bottomright=(surface.get_width() - margin, origin_y - 16))
         surface.blit(label, label_rect)
 
@@ -325,15 +341,21 @@ class MainMenuScene(Scene):
             self.app.change_scene(ProgressOverviewScene)
         else:
             # Placeholder until the dedicated scenes are ready.
-            self.feedback_message = f"'{option.label}' komt binnenkort!"
+            label_text = self._gettext(option.label_key, default=option.default_label)
+            self.feedback_message = self._gettext(
+                "main_menu.coming_soon",
+                default="'{label}' komt binnenkort!",
+                label=label_text,
+            )
             self.feedback_timer = 2.5
+
     def _create_menu_buttons(self) -> None:
         self.buttons = []
         for idx, option in enumerate(self.options):
             palette = self.button_palette[idx % len(self.button_palette)]
             button = Button(
                 pygame.Rect(0, 0, *self.button_size),
-                option.label,
+                self._gettext(option.label_key, default=option.default_label),
                 self.option_font,
                 palette,
                 text_color=(255, 255, 255),
@@ -344,6 +366,24 @@ class MainMenuScene(Scene):
     def _on_option_selected(self, index: int) -> None:
         self.selected_index = index
         self.activate_option(index)
+
+    def _gettext(self, key: str, *, default: str | None = None, **kwargs: object) -> str:
+        translator = getattr(self.app, "translator", None)
+        if translator is not None:
+            translated = translator.gettext(key, **kwargs)
+            if translated != key:
+                return translated
+        if default is not None:
+            try:
+                return default.format(**kwargs)
+            except (KeyError, ValueError):
+                return default
+        if kwargs:
+            try:
+                return key.format(**kwargs)
+            except (KeyError, ValueError):
+                return key
+        return key
 
 
 __all__ = ["MainMenuScene"]

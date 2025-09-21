@@ -1,0 +1,20 @@
+{
+  "common": {
+    "back": "Back"
+  },
+  "main_menu": {
+    "greeting": "Hi {name}!",
+    "subtitle": "What would you like to do today?",
+    "profile_selector": {
+      "label": "Who's playing?"
+    },
+    "options": {
+      "practice": "Practice",
+      "test": "Test",
+      "progress": "How did you do?",
+      "settings": "Settings",
+      "quit": "Quit"
+    },
+    "coming_soon": "'{label}' is coming soon!"
+  }
+}

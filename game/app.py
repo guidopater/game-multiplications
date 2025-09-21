@@ -9,6 +9,7 @@ from typing import List, Type
 import pygame
 
 from . import settings
+from .locale import Translator
 from .models import PlayerProfile, GameSettings
 from .scenes.base import Scene
 from .scenes.main_menu import MainMenuScene
@@ -49,6 +50,7 @@ class App:
         self.scores = ScoreRepository(self.data_dir / "scores.json")
         self.settings_store = SettingsStore(self.data_dir / "settings.json")
         self.settings: GameSettings = self.settings_store.load()
+        self.translator = Translator(self.assets_dir / "locale", self.settings.language, default_language="nl")
         self.profiles = self._load_profiles()
         if not self.profiles:
             self.profiles = [

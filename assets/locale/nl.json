@@ -1,0 +1,20 @@
+{
+  "common": {
+    "back": "Terug"
+  },
+  "main_menu": {
+    "greeting": "Hoi {name}!",
+    "subtitle": "Waar heb je zin in vandaag?",
+    "profile_selector": {
+      "label": "Wie speelt er?"
+    },
+    "options": {
+      "practice": "Oefenen",
+      "test": "Testen",
+      "progress": "Hoe deed je het?",
+      "settings": "Instellingen",
+      "quit": "Afsluiten"
+    },
+    "coming_soon": "'{label}' komt binnenkort!"
+  }
+}
