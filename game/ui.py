@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Callable, Dict, Optional
 
 import pygame
 
@@ -73,3 +73,59 @@ def draw_glossy_button(
 
 
 __all__ = ["draw_glossy_button"]
+
+
+class Button:
+    """Interactive button built on top of the glossy button helper."""
+
+    def __init__(
+        self,
+        rect: pygame.Rect,
+        label: str,
+        font: pygame.font.Font,
+        palette: Palette,
+        *,
+        text_color: tuple[int, int, int] = (255, 255, 255),
+        callback: Optional[Callable[[], None]] = None,
+    ) -> None:
+        self.rect = rect
+        self.label = label
+        self.font = font
+        self.palette = palette
+        self.text_color = text_color
+        self._callback = callback
+
+    def set_rect(self, rect: pygame.Rect) -> None:
+        self.rect = rect
+
+    def render(
+        self,
+        surface: pygame.Surface,
+        *,
+        hover: bool = False,
+        selected: bool = False,
+    ) -> pygame.Rect:
+        face_rect = draw_glossy_button(
+            surface,
+            self.rect,
+            self.palette,
+            selected=selected,
+            hover=hover,
+        )
+        text_surface = self.font.render(self.label, True, self.text_color)
+        surface.blit(text_surface, text_surface.get_rect(center=face_rect.center))
+        return face_rect
+
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.trigger()
+                return True
+        return False
+
+    def trigger(self) -> None:
+        if self._callback:
+            self._callback()
+
+
+__all__ = ["draw_glossy_button", "Button"]

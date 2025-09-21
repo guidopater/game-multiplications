@@ -9,7 +9,7 @@ from typing import List, Tuple
 import pygame
 
 from .. import settings
-from ..ui import draw_glossy_button
+from ..ui import Button, draw_glossy_button
 from .base import Scene
 
 
@@ -40,7 +40,7 @@ class MainMenuScene(Scene):
             MenuOption(label="Afsluiten", action="quit"),
         ]
         self.selected_index = 0
-        self.option_rects: List[pygame.Rect] = []
+        self.buttons: List[Button] = []
 
         self.feedback_message = ""
         self.feedback_timer = 0.0
@@ -91,6 +91,7 @@ class MainMenuScene(Scene):
         ]
         self.button_size = (420, 96)
         self.button_spacing = 24
+        self._create_menu_buttons()
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: List[pygame.event.Event]) -> None:
@@ -101,22 +102,21 @@ class MainMenuScene(Scene):
                 elif event.key in (pygame.K_DOWN, pygame.K_s):
                     self.selected_index = (self.selected_index + 1) % len(self.options)
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    self.activate_option(self.selected_index)
+                    if 0 <= self.selected_index < len(self.buttons):
+                        self.buttons[self.selected_index].trigger()
 
             elif event.type == pygame.MOUSEMOTION:
-                for index, rect in enumerate(self.option_rects):
-                    if rect.collidepoint(event.pos):
+                for index, button in enumerate(self.buttons):
+                    if button.rect.collidepoint(event.pos):
                         self.selected_index = index
                         break
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self._handle_profile_click(event.pos):
                     continue
-                for index, rect in enumerate(self.option_rects):
-                    if rect.collidepoint(event.pos):
-                        if hasattr(self.app, "sounds") and "click" in self.app.sounds:
-                            self.app.sounds["click"].play()
-                        self.activate_option(index)
+                for index, button in enumerate(self.buttons):
+                    if button.handle_event(event):
+                        self.selected_index = index
                         break
 
     def _handle_profile_click(self, position: Tuple[int, int]) -> bool:
@@ -163,13 +163,11 @@ class MainMenuScene(Scene):
     def _draw_options(self, surface: pygame.Surface) -> None:
         base_y = settings.SCREEN_MARGIN + 160
         button_width, button_height = self.button_size
-        self.option_rects = []
         menu_x = (surface.get_width() - button_width) // 2
 
         mouse_pos = pygame.mouse.get_pos()
 
-        for index, option in enumerate(self.options):
-            palette = self.button_palette[index % len(self.button_palette)]
+        for index, button in enumerate(self.buttons):
             base_rect = pygame.Rect(
                 menu_x,
                 base_y + index * (button_height + self.button_spacing),
@@ -177,14 +175,10 @@ class MainMenuScene(Scene):
                 button_height,
             )
 
+            button.set_rect(base_rect)
             is_selected = index == self.selected_index
             is_hover = base_rect.collidepoint(mouse_pos)
-            face_rect = draw_glossy_button(surface, base_rect, palette, selected=is_selected, hover=is_hover)
-
-            text_surface = self.option_font.render(option.label, True, (255, 255, 255))
-            surface.blit(text_surface, text_surface.get_rect(center=face_rect.center))
-
-            self.option_rects.append(base_rect)
+            button.render(surface, hover=is_hover, selected=is_selected)
 
     def _draw_feedback(self, surface: pygame.Surface) -> None:
         if not self.feedback_message:
@@ -333,6 +327,23 @@ class MainMenuScene(Scene):
             # Placeholder until the dedicated scenes are ready.
             self.feedback_message = f"'{option.label}' komt binnenkort!"
             self.feedback_timer = 2.5
+    def _create_menu_buttons(self) -> None:
+        self.buttons = []
+        for idx, option in enumerate(self.options):
+            palette = self.button_palette[idx % len(self.button_palette)]
+            button = Button(
+                pygame.Rect(0, 0, *self.button_size),
+                option.label,
+                self.option_font,
+                palette,
+                text_color=(255, 255, 255),
+                callback=lambda index=idx: self._on_option_selected(index),
+            )
+            self.buttons.append(button)
+
+    def _on_option_selected(self, index: int) -> None:
+        self.selected_index = index
+        self.activate_option(index)
 
 
 __all__ = ["MainMenuScene"]
