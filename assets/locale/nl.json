@@ -250,6 +250,7 @@
     },
     "profiles": {
       "active_name": "Naam actief profiel",
+      "avatar_label": "Kies een avatar",
       "buttons": {
         "save_name": "Bewaar naam",
         "new_profile": "Nieuw profiel",
@@ -263,7 +264,8 @@
         "profile_deleted": "Profiel verwijderd.",
         "profile_created": "Nieuw profiel aangemaakt.",
         "name_empty": "Naam mag niet leeg zijn.",
-        "name_saved": "Naam opgeslagen."
+        "name_saved": "Naam opgeslagen.",
+        "avatar_saved": "Avatar gewijzigd."
       }
     },
     "data": {

@@ -44,6 +44,11 @@ class ProgressOverviewScene(Scene):
         self.tricky_tables: List[tuple[int, float, float]] = []
         self.top_back_rect: pygame.Rect | None = None
 
+        self.scroll_offset = 0.0
+        self.max_scroll = 0.0
+        self.content_height = 0.0
+        self.pointer_content_pos: tuple[float, float] = (0.0, 0.0)
+
         self._load_data()
 
         self.button_palettes = {
@@ -146,10 +151,14 @@ class ProgressOverviewScene(Scene):
     def handle_events(self, events: Iterable[pygame.event.Event]) -> None:
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                content_pos = (event.pos[0], event.pos[1] + self.scroll_offset)
                 for action, rect in self.buttons:
-                    if rect.collidepoint(event.pos):
+                    if rect.collidepoint(content_pos):
                         self._handle_button(action)
                         return
+            elif event.type == pygame.MOUSEWHEEL:
+                self._adjust_scroll(-event.y * 60)
+                continue
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
                     from .main_menu import MainMenuScene
@@ -159,6 +168,18 @@ class ProgressOverviewScene(Scene):
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     self._handle_button("start_test")
                     return
+                if event.key == pygame.K_UP:
+                    self._adjust_scroll(-40)
+                    continue
+                if event.key == pygame.K_DOWN:
+                    self._adjust_scroll(40)
+                    continue
+                if event.key == pygame.K_PAGEUP:
+                    self._adjust_scroll(-200)
+                    continue
+                if event.key == pygame.K_PAGEDOWN:
+                    self._adjust_scroll(200)
+                    continue
 
     def _handle_button(self, action: str) -> None:
         if action == "start_test":
@@ -178,15 +199,50 @@ class ProgressOverviewScene(Scene):
     def render(self, surface: pygame.Surface) -> None:
         self._refresh_action_labels()
         Scene.draw_vertical_gradient(surface, settings.GRADIENT_TOP, settings.GRADIENT_BOTTOM)
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.max_scroll = max(0.0, self.content_height - surface.get_height())
+        self.scroll_offset = max(0.0, min(self.scroll_offset, self.max_scroll))
+        self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
+
+        estimated_height = int(max(surface.get_height() + 400, self.content_height + settings.SCREEN_MARGIN * 4))
+        width = surface.get_width()
+
+        content_surface = pygame.Surface((width, estimated_height), pygame.SRCALPHA)
         self.buttons = []
-        self._draw_header(surface)
+        self.top_back_rect = None
+        content_bottom = self._render_content(content_surface)
+
+        self.content_height = content_bottom
+        self.max_scroll = max(0.0, self.content_height - surface.get_height())
+        self.scroll_offset = max(0.0, min(self.scroll_offset, self.max_scroll))
+        self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
+
+        content_surface = pygame.Surface((width, int(max(surface.get_height() + 200, self.content_height + settings.SCREEN_MARGIN * 2))), pygame.SRCALPHA)
+        self.buttons = []
+        self.top_back_rect = None
+        self.content_height = self._render_content(content_surface)
+
+        surface.blit(content_surface, (0, -int(self.scroll_offset)))
+
+    def _render_content(self, surface: pygame.Surface) -> int:
+        margin = settings.SCREEN_MARGIN
+        header_bottom = self._draw_header(surface)
+        current_top = max(margin + 110, header_bottom + 60)
+
         if not self.recent_results:
-            self._draw_empty_state(surface)
+            section_bottom = self._draw_empty_state(surface, current_top)
+            current_top = section_bottom + margin
         else:
-            self._draw_top_row(surface)
-            self._draw_trend_card(surface)
-        self._draw_history(surface)
-        self._draw_buttons(surface)
+            section_bottom = self._draw_top_row(surface, current_top)
+            current_top = section_bottom + margin // 2
+            section_bottom = self._draw_trend_card(surface, current_top)
+            current_top = section_bottom + margin // 2
+            section_bottom = self._draw_history(surface, current_top)
+            current_top = section_bottom + margin
+
+        bottom = self._draw_buttons(surface, current_top)
+        return bottom + margin
 
     def _refresh_action_labels(self) -> None:
         self.action_labels["start_test"] = self.tr(
@@ -202,29 +258,36 @@ class ProgressOverviewScene(Scene):
             default=self.tr("common.back", default="Terug"),
         )
 
-    def _draw_header(self, surface: pygame.Surface) -> None:
+    def _adjust_scroll(self, delta: float) -> None:
+        if delta == 0:
+            return
+        self.scroll_offset = max(0.0, min(self.scroll_offset + delta, self.max_scroll))
+
+    def _draw_header(self, surface: pygame.Surface) -> int:
         margin = settings.SCREEN_MARGIN
-        back_rect = pygame.Rect(margin, margin - 6, 160, 48)
-        palette = {
-            "top": (216, 196, 255),
-            "bottom": (176, 148, 227),
-            "border": (126, 98, 192),
-            "shadow": (102, 78, 152),
-        }
-        draw_glossy_button(
+        back_label = self.action_labels["back"]
+        back_font = self.body_font
+        back_text = back_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
+        padding_x = 32
+        padding_y = 18
+        back_width = back_text.get_width() + padding_x * 2
+        back_height = back_text.get_height() + padding_y * 2
+        back_rect = pygame.Rect(margin, margin, back_width, back_height)
+        palette = self.button_palettes["back"]
+        hover = back_rect.collidepoint(self.pointer_content_pos)
+        face_rect = draw_glossy_button(
             surface,
             back_rect,
             palette,
             selected=False,
-            hover=back_rect.collidepoint(pygame.mouse.get_pos()),
-            corner_radius=24,
+            hover=hover,
+            corner_radius=28,
         )
-        back_label = self.action_labels["back"]
-        back_text = self.button_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(back_text, back_text.get_rect(center=back_rect.center))
+        surface.blit(back_text, back_text.get_rect(center=face_rect.center))
         self.top_back_rect = back_rect
+        self.buttons.append(("back", back_rect))
 
-        offset = back_rect.right + 24
+        offset = back_rect.right + 32
         profile = self.app.active_profile
         title_text = self.tr(
             "progress_overview.title",
@@ -232,20 +295,24 @@ class ProgressOverviewScene(Scene):
             name=profile.display_name,
         )
         title = self.title_font.render(title_text, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(title, title.get_rect(topleft=(offset, margin - 20)))
+        title_rect = title.get_rect(topleft=(offset, margin - 20))
+        surface.blit(title, title_rect)
 
         subtitle_text = self.tr(
             "progress_overview.subtitle",
             default="Bekijk je voortgang en vergelijk met de rest van het team!",
         )
         subtitle = self.body_font.render(subtitle_text, True, settings.COLOR_TEXT_DIM)
-        surface.blit(subtitle, subtitle.get_rect(topleft=(offset + 6, margin + 34)))
+        subtitle_rect = subtitle.get_rect(topleft=(offset + 6, margin + 34))
+        surface.blit(subtitle, subtitle_rect)
 
-    def _draw_empty_state(self, surface: pygame.Surface) -> None:
+        return max(back_rect.bottom, title_rect.bottom, subtitle_rect.bottom)
+
+    def _draw_empty_state(self, surface: pygame.Surface, top: int) -> int:
         margin = settings.SCREEN_MARGIN
         card = pygame.Rect(
             margin,
-            margin + 120,
+            top,
             surface.get_width() - margin * 2,
             220,
         )
@@ -272,11 +339,12 @@ class ProgressOverviewScene(Scene):
             surface.blit(text_surface, text_surface.get_rect(center=(card.centerx, y)))
             y += 34
 
-    def _draw_top_row(self, surface: pygame.Surface) -> None:
+        return card.bottom
+
+    def _draw_top_row(self, surface: pygame.Surface, top_offset: int) -> int:
         assert self.latest_result is not None
         margin = settings.SCREEN_MARGIN
-        top_offset = margin + 110
-        row_height = 220
+        row_height = max(self._measure_recent_highlight_height(), self._measure_leaderboard_height())
         half_width = (surface.get_width() - margin * 3) // 2
 
         left_card = pygame.Rect(margin, top_offset, half_width, row_height)
@@ -284,6 +352,8 @@ class ProgressOverviewScene(Scene):
 
         self._draw_recent_highlight(surface, left_card)
         self._draw_leaderboard(surface, right_card)
+
+        return top_offset + row_height
 
     def _draw_recent_highlight(self, surface: pygame.Surface, card: pygame.Rect) -> None:
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=32)
@@ -299,18 +369,7 @@ class ProgressOverviewScene(Scene):
         assert self.latest_result is not None
         latest = self.latest_result
         timestamp = latest.timestamp.strftime("%d %b %Y, %H:%M")
-        tables = ", ".join(str(n) for n in latest.tables) or "-"
-        accuracy = f"{latest.accuracy * 100:.0f}%"
-        duration = self._format_duration(latest.elapsed_seconds)
-        remaining = self._format_duration(latest.remaining_seconds)
-
-        stats = {
-            "tables": tables,
-            "accuracy": accuracy,
-            "answered": f"{latest.answered}/{latest.question_count}",
-            "time_used": duration,
-            "remaining": remaining,
-        }
+        stats = self._recent_highlight_stats()
 
         info_x = card.left + 32
         info_y = card.top + 90
@@ -326,7 +385,7 @@ class ProgressOverviewScene(Scene):
         surface.blit(timestamp_surface, (info_x, info_y))
         info_y += 36
 
-        for key, value in stats.items():
+        for key, value in stats:
             label_text = self.tr(
                 f"progress_overview.latest.labels.{key}",
                 default={
@@ -343,14 +402,14 @@ class ProgressOverviewScene(Scene):
             surface.blit(value_surface, (info_x + 180, info_y - 6))
             info_y += 48
 
-    def _draw_trend_card(self, surface: pygame.Surface) -> None:
+    def _draw_trend_card(self, surface: pygame.Surface, top_offset: int) -> int:
         margin = settings.SCREEN_MARGIN
-        top_offset = margin + 110 + 220 + margin // 2
+        card_height = self._measure_trend_card_height()
         card = pygame.Rect(
             margin,
             top_offset,
             surface.get_width() - margin * 2,
-            170,
+            card_height,
         )
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT_LIGHT, card, width=3, border_radius=28)
@@ -416,15 +475,20 @@ class ProgressOverviewScene(Scene):
                 surface.blit(text, (card.right - 210, ty))
                 ty += 26
 
-    def _draw_history(self, surface: pygame.Surface) -> None:
+        return card.bottom
+
+    def _draw_history(self, surface: pygame.Surface, top_offset: int) -> int:
         margin = settings.SCREEN_MARGIN
-        top_offset = margin + 110 + 220 + margin // 2 + 170 + margin // 2
-        available_height = surface.get_height() - top_offset - margin - 120
+        width = surface.get_width() - margin * 2
+        recent = list(self.recent_results[-5:])
+        recent.reverse()
+        rows = len(recent)
+        content_height = 80 + rows * 32 + 40
         card = pygame.Rect(
             margin,
             top_offset,
-            surface.get_width() - margin * 2,
-            max(160, available_height),
+            width,
+            max(220, content_height),
         )
         pygame.draw.rect(surface, settings.COLOR_CARD_BASE, card, border_radius=28)
         pygame.draw.rect(surface, settings.COLOR_ACCENT, card, width=3, border_radius=28)
@@ -436,8 +500,6 @@ class ProgressOverviewScene(Scene):
         )
         surface.blit(heading, heading.get_rect(topleft=(card.left + 28, card.top + 24)))
 
-        recent = list(self.recent_results[-5:])
-        recent.reverse()
         y = card.top + 80
         for result in recent:
             date_text = result.timestamp.strftime("%d %b")
@@ -453,6 +515,8 @@ class ProgressOverviewScene(Scene):
             line = self.body_font.render(line_text, True, settings.COLOR_TEXT_PRIMARY)
             surface.blit(line, (card.left + 28, y))
             y += 32
+
+        return card.bottom
 
     def _draw_leaderboard(self, surface: pygame.Surface, card: pygame.Rect | None = None) -> None:
         if card is None:
@@ -530,22 +594,19 @@ class ProgressOverviewScene(Scene):
                 divider = pygame.Rect(card.left + 24, y - 4, card.width - 48, 1)
                 pygame.draw.rect(surface, (255, 255, 255, 60), divider)
 
-    def _draw_buttons(self, surface: pygame.Surface) -> None:
+    def _draw_buttons(self, surface: pygame.Surface, top_offset: int) -> int:
         margin = settings.SCREEN_MARGIN
-        bottom = surface.get_height() - margin - 90
         total_width = 700
         right = surface.get_width() - margin
         start_x = right - total_width
+        button_height = 78
 
         configs = [
-            ("start_test", pygame.Rect(start_x, bottom, 240, 78)),
-            ("go_practice", pygame.Rect(start_x + 260, bottom, 220, 78)),
+            ("start_test", pygame.Rect(start_x, top_offset, 280, button_height)),
+            ("go_practice", pygame.Rect(start_x + 300, top_offset, 220, button_height)),
         ]
 
-        mouse_pos = pygame.mouse.get_pos()
-        self.buttons = []
-        if self.top_back_rect is not None:
-            self.buttons.append(("back", self.top_back_rect))
+        mouse_pos = self.pointer_content_pos
         for action, rect in configs:
             face = draw_glossy_button(
                 surface,
@@ -559,19 +620,98 @@ class ProgressOverviewScene(Scene):
             surface.blit(text_surface, text_surface.get_rect(center=face.center))
             self.buttons.append((action, rect))
 
-        if self.top_back_rect is not None:
-            back_face = draw_glossy_button(
-                surface,
-                self.top_back_rect,
-                self.button_palettes["back"],
-                selected=False,
-                hover=self.top_back_rect.collidepoint(mouse_pos),
-                corner_radius=24,
-            )
-            back_text = self.button_font.render(self.action_labels["back"], True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(back_text, back_text.get_rect(center=back_face.center))
+        return top_offset + button_height
 
     # Helpers --------------------------------------------------------
+    def _measure_recent_highlight_height(self) -> int:
+        if self.latest_result is None:
+            return 220
+
+        heading_bottom = 28 + self.section_font.get_height()
+        timestamp_bottom = 90 + self.body_font.get_height()
+
+        row_y = 90
+        content_bottom = max(heading_bottom, timestamp_bottom)
+        for _ in self._recent_highlight_stats():
+            label_bottom = row_y + self.small_font.get_height()
+            value_bottom = row_y - 6 + self.stat_font.get_height()
+            content_bottom = max(content_bottom, label_bottom, value_bottom)
+            row_y += 48
+
+        return int(content_bottom + 32)
+
+    def _measure_leaderboard_height(self, limit: int = 8) -> int:
+        heading_bottom = 26 + self.section_font.get_height()
+        content_bottom = heading_bottom
+
+        if not self.leaderboard_rows:
+            empty_bottom = 90 + self.body_font.get_height()
+            content_bottom = max(content_bottom, empty_bottom)
+        else:
+            header_bottom = 74 + self.small_font.get_height()
+            content_bottom = max(content_bottom, header_bottom)
+            rows = min(len(self.leaderboard_rows), limit)
+            if rows:
+                last_row_bottom = 108 + (rows - 1) * 36 + self.body_font.get_height()
+                content_bottom = max(content_bottom, last_row_bottom)
+
+        return int(content_bottom + 32)
+
+    def _measure_trend_card_height(self) -> int:
+        heading_bottom = 24 + self.section_font.get_height()
+        content_bottom = heading_bottom
+
+        messages = [
+            self.tr(
+                "progress_overview.trends.average_accuracy",
+                default="Gemiddelde nauwkeurigheid: {value}",
+                value=f"{self._average_accuracy(self.recent_results) * 100:.0f}%",
+            ),
+            self.tr(
+                "progress_overview.trends.change",
+                default="Verandering t.o.v. vorige: {delta}",
+                delta=f"{self._accuracy_change(self.recent_results):+.0f} punten",
+            ),
+            self.tr(
+                "progress_overview.trends.longest_streak",
+                default="Langste streak: {value}",
+                value=self._longest_streak(self.recent_results),
+            ),
+            self.tr(
+                "progress_overview.trends.average_time",
+                default="Gem. reactietijd: {value}",
+                value=f"{self._average_time(self.recent_results):.1f}s",
+            ),
+        ]
+
+        if messages:
+            messages_bottom = 80 + (len(messages) - 1) * 32 + self.body_font.get_height()
+            content_bottom = max(content_bottom, messages_bottom)
+
+        if self.tricky_tables:
+            hint_bottom = 24 + self.small_font.get_height()
+            content_bottom = max(content_bottom, hint_bottom)
+            tables_bottom = 56 + (len(self.tricky_tables) - 1) * 26 + self.small_font.get_height()
+            content_bottom = max(content_bottom, tables_bottom)
+
+        return int(content_bottom + 32)
+
+    def _recent_highlight_stats(self) -> List[tuple[str, str]]:
+        assert self.latest_result is not None
+        latest = self.latest_result
+        tables = ", ".join(str(n) for n in latest.tables) or "-"
+        accuracy = f"{latest.accuracy * 100:.0f}%"
+        duration = self._format_duration(latest.elapsed_seconds)
+        remaining = self._format_duration(latest.remaining_seconds)
+
+        return [
+            ("tables", tables),
+            ("accuracy", accuracy),
+            ("answered", f"{latest.answered}/{latest.question_count}"),
+            ("time_used", duration),
+            ("remaining", remaining),
+        ]
+
     def _average_accuracy(self, results: Sequence[TestResult]) -> float:
         if not results:
             return 0.0

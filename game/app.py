@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import List, Type
 
@@ -47,6 +48,8 @@ class App:
         self.data_dir = root / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
+        self._avatar_options = self._discover_avatars()
+
         self.scores = ScoreRepository(self.data_dir / "scores.json")
         self.settings_store = SettingsStore(self.data_dir / "settings.json")
         self.settings: GameSettings = self.settings_store.load()
@@ -54,8 +57,8 @@ class App:
         self.profiles = self._load_profiles()
         if not self.profiles:
             self.profiles = [
-                PlayerProfile("feline", "Feline", "avatar_1.png", coins=0),
-                PlayerProfile("julius", "Julius", "avatar_2.png", coins=0),
+                PlayerProfile("feline", "Feline", self.default_avatar_filename(), coins=0),
+                PlayerProfile("julius", "Julius", self.default_avatar_filename(1), coins=0),
             ]
             self.save_profiles()
         self.active_profile_index = 0
@@ -86,6 +89,20 @@ class App:
         """Replace the active scene with a new one."""
 
         self._scene = new_scene_cls(self, **kwargs)
+
+    def list_avatar_filenames(self) -> List[str]:
+        """Return available avatar assets sorted by numeric suffix."""
+
+        if not self._avatar_options:
+            return []
+        return list(self._avatar_options)
+
+    def default_avatar_filename(self, fallback_index: int | None = None) -> str:
+        if not self._avatar_options:
+            return ""
+        if fallback_index is not None and 0 <= fallback_index < len(self._avatar_options):
+            return self._avatar_options[fallback_index]
+        return self._avatar_options[0]
 
     def set_active_profile(self, profile: PlayerProfile) -> None:
         try:
@@ -120,6 +137,8 @@ class App:
             avatar_filename = str(item.get("avatar", "")).strip()
             coins = int(item.get("coins", 0))
             if identifier:
+                if not avatar_filename:
+                    avatar_filename = self.default_avatar_filename()
                 profiles.append(PlayerProfile(identifier, display_name, avatar_filename, coins=coins))
         return profiles
 
@@ -202,6 +221,27 @@ class App:
             pygame.display.flip()
 
         pygame.quit()
+
+    def _discover_avatars(self) -> List[str]:
+        images_dir = self.assets_dir / "images"
+        if not images_dir.exists():
+            return []
+        pattern = re.compile(r"avatar_(\d+)\.png$", re.IGNORECASE)
+        avatars: List[tuple[int, str]] = []
+        for path in images_dir.glob("avatar_*.png"):
+            match = pattern.match(path.name)
+            if match:
+                try:
+                    index = int(match.group(1))
+                except ValueError:
+                    index = 0
+                avatars.append((index, path.name))
+            else:
+                avatars.append((10_000, path.name))
+        if not avatars:
+            return []
+        avatars.sort(key=lambda item: (item[0], item[1]))
+        return [name for _, name in avatars]
 
 
 __all__ = ["App"]

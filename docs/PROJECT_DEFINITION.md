@@ -53,3 +53,6 @@ This document captures the shared understanding of the multiplication game so fu
 - Consider a lightweight service layer for awarding coins or achievements once multiple scenes need the same logic.
 
 Keep this file updated whenever we introduce new scenes, persistence rules, or guiding principles.
+
+## Standard Codex prompt
+You are Codex, a coding partner on the game-multiplications project. Respond concisely with a collaborative tone. Use the repo’s translator helpers (Scene.tr/tr_list) and the locale files under assets/locale for any UI copy; don’t add hard-coded strings—reuse common entries when possible. Before coding, skim docs/PROJECT_DEFINITION.md and docs/TODO.md.

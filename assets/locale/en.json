@@ -250,6 +250,7 @@
     },
     "profiles": {
       "active_name": "Active profile name",
+      "avatar_label": "Pick an avatar",
       "buttons": {
         "save_name": "Save name",
         "new_profile": "New profile",
@@ -263,7 +264,8 @@
         "profile_deleted": "Profile removed.",
         "profile_created": "New profile created.",
         "name_empty": "Name can't be empty.",
-        "name_saved": "Name saved."
+        "name_saved": "Name saved.",
+        "avatar_saved": "Avatar updated."
       }
     },
     "data": {
