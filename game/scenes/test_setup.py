@@ -9,6 +9,7 @@ import pygame
 
 from .. import settings
 from ..ui import Button, draw_glossy_button
+from ..rewards import estimate_max_reward
 
 try:
     import numpy as np
@@ -491,12 +492,6 @@ class TestSetupScene(Scene):
     def _estimate_max_reward(self) -> int:
         if not self.selected_tables:
             return 0
-        avg_table = sum(self.selected_tables) / len(self.selected_tables)
-        per_question = 6 + avg_table
         questions = self.QUESTION_CHOICES[self.selected_question_index]
-        speed = self.SPEED_OPTIONS[self.selected_speed_index]
-        scale = questions / self.QUESTION_CHOICES[-1]
-        time_limit = max(60, int(speed.minutes * 60 * scale))
-        time_bonus = int((time_limit / 60) * 2)
-        return int(per_question * questions + time_bonus)
-        return images
+        speed_label = self.SPEED_OPTIONS[self.selected_speed_index].label
+        return estimate_max_reward(self.selected_tables, questions, speed_label)

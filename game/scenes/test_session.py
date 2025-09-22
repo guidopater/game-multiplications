@@ -14,6 +14,12 @@ from .. import settings
 from ..ui import Button, draw_glossy_button
 from ..models import TestConfig, TestResult
 from .base import Scene
+from ..rewards import (
+    INCORRECT_PENALTY,
+    per_question_reward as reward_for_table,
+    speed_bonus,
+    time_bonus_from_ratio,
+)
 
 
 @dataclass(frozen=True)
@@ -420,8 +426,7 @@ class TestSessionScene(Scene):
         return max(question.left, question.right)
 
     def _per_question_reward(self, table: int) -> int:
-        # Base reward scales gently with table difficulty (roughly 2–4 coins).
-        return 2 + table // 4
+        return reward_for_table(table)
 
     def _calculate_reward(self, result: TestResult) -> int:
         total = 0
@@ -431,7 +436,7 @@ class TestSessionScene(Scene):
             if is_correct:
                 total += per
             else:
-                total -= 2
+                total -= INCORRECT_PENALTY
 
         total = max(0, total)
 
@@ -439,14 +444,7 @@ class TestSessionScene(Scene):
             ratio = result.remaining_seconds / result.time_limit_seconds
         else:
             ratio = 0.0
-        time_bonus = int(ratio * 8)
-        speed_bonus = {
-            "Slak": 0,
-            "Schildpad": 2,
-            "Haas": 4,
-            "Cheeta": 6,
-        }.get(self.speed_label, 0)
-        total += max(0, time_bonus + speed_bonus)
+        total += max(0, time_bonus_from_ratio(ratio) + speed_bonus(self.speed_label))
 
         return total
 
