@@ -70,12 +70,20 @@ class Scene:
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self._back_button_rect.collidepoint(event.pos):
+                self.play_back_sound()
                 self.on_back()
                 return True
         return False
 
     def on_back(self) -> None:
         """Override to implement back navigation."""
+
+    def play_back_sound(self) -> None:
+        if hasattr(self.app, "play_sound"):
+            try:
+                self.app.play_sound("back")
+            except Exception:
+                pass
 
     # Translation helpers --------------------------------------------
     def tr(self, key: str, default: str | None = None, **kwargs: object) -> str:

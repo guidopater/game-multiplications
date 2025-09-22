@@ -85,6 +85,9 @@ class PracticeSetupScene(Scene):
                     self.selected_tables.clear()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.back_button_rect and self.back_button_rect.collidepoint(event.pos):
+                    self.on_back()
+                    return
                 if self.start_button.handle_event(event):
                     return
                 for rect, value in self.table_rects:
@@ -215,6 +218,7 @@ class PracticeSetupScene(Scene):
         self.on_back()
 
     def on_back(self) -> None:
+        self.play_back_sound()
         from .main_menu import MainMenuScene
 
         self.app.change_scene(MainMenuScene)

@@ -39,7 +39,8 @@
     "toggle": {
       "on": "On",
       "off": "Off"
-    }
+    },
+    "stop": "Stop"
   },
   "main_menu": {
     "greeting": "Hi {name}!",
@@ -310,8 +311,9 @@
         "Most importantly: no ads, no tracking—just cheerful, simple learning.",
         "Find it useful? Please share it! Truly thrilled? Feel free to treat me to a coffee ;)"
       ],
-      "cta": "Buy a coffee",
-      "thank_you": "Thank you! Coffee link coming soon."
+      "cta": "Buy me a coffee",
+      "thank_you": "Thanks! Opening the link in your browser.",
+      "open_failed": "Open this link manually: {url}"
     },
     "save": {
       "saved": "Saved",

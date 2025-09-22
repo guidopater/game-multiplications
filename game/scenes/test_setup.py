@@ -393,16 +393,13 @@ class TestSetupScene(Scene):
         self.app.change_scene(TestSessionScene, config=config, speed_label=speed.label)
 
     def on_back(self) -> None:
+        self.play_back_sound()
         from .main_menu import MainMenuScene
 
         self.app.change_scene(MainMenuScene)
 
     def _handle_back_action(self) -> None:
-        if hasattr(self.app, "sounds") and "back" in self.app.sounds:
-            self.app.sounds["back"].play()
-        from .main_menu import MainMenuScene
-
-        self.app.change_scene(MainMenuScene)
+        self.on_back()
 
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:

@@ -326,6 +326,7 @@ class PracticeSessionScene(Scene):
         if is_correct:
             self.correct_answers += 1
             self.streak += 1
+            self.app.play_sound("good")
             messages = self.tr_list(
                 "practice_session.feedback.correct",
                 default=self._positive_feedback_options,
@@ -336,6 +337,7 @@ class PracticeSessionScene(Scene):
             self._next_question()
         else:
             self.streak = 0
+            self.app.play_sound("wrong")
             self.feedback_message = self.tr(
                 "practice_session.feedback.almost",
                 default="Bijna! {left} x {right} = {answer}",
@@ -386,6 +388,7 @@ class PracticeSessionScene(Scene):
         self.answer_effects = active
 
     def on_back(self) -> None:
+        self.play_back_sound()
         from .practice_summary import PracticeSummaryScene
 
         table_stats = {int(k): dict(v) for k, v in self.table_stats.items()}

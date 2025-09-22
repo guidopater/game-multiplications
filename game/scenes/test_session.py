@@ -100,7 +100,7 @@ class TestSessionScene(Scene):
 
         self.back_button = Button(
             pygame.Rect(0, 0, 140, 52),
-            self.tr("common.stop", default="Stop"),
+            self.tr("common.stop", default="Stoppen"),
             self.helper_font,
             self.back_palette,
             text_color=settings.COLOR_TEXT_PRIMARY,
@@ -118,9 +118,7 @@ class TestSessionScene(Scene):
                     return
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    from .main_menu import MainMenuScene
-
-                    self.app.change_scene(MainMenuScene)
+                    self.on_back()
                     return
                 if event.key in (pygame.K_BACKSPACE, pygame.K_DELETE):
                     self.input_value = self.input_value[:-1]
@@ -449,15 +447,17 @@ class TestSessionScene(Scene):
         return total
 
     def on_back(self) -> None:
-        if hasattr(self.app, "sounds") and "back" in self.app.sounds:
-            self.app.sounds["back"].play()
+        self.play_back_sound()
+        if not self.finished:
+            self._finish_session(time_up=True)
+            return
         from .test_setup import TestSetupScene
 
         self.app.change_scene(TestSetupScene)
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN
-        back_label = self.tr("common.back", default="Terug")
+        back_label = self.tr("common.stop", default="Stoppen")
         self.back_button.label = back_label
         text = self.helper_font.render(back_label, True, settings.COLOR_TEXT_PRIMARY)
         padding_x = 32
@@ -465,6 +465,7 @@ class TestSessionScene(Scene):
         width = text.get_width() + padding_x * 2
         height = text.get_height() + padding_y * 2
         rect = pygame.Rect(margin, margin + 6, width, height)
+        self.back_button.set_rect(rect)
         face_rect = draw_glossy_button(
             surface,
             rect,
@@ -473,6 +474,7 @@ class TestSessionScene(Scene):
             hover=rect.collidepoint(pygame.mouse.get_pos()),
             corner_radius=28,
         )
+        self.back_button_rect = rect
         surface.blit(text, text.get_rect(center=face_rect.center))
 
     def _question_center(self) -> tuple[int, int]:

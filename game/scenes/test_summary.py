@@ -392,14 +392,13 @@ class TestSummaryScene(Scene):
         return lines
 
     def _handle_back_action(self) -> None:
-        if hasattr(self.app, "sounds") and "back" in self.app.sounds:
-            self.app.sounds["back"].play()
+        self.on_back()
+
+    def on_back(self) -> None:
+        self.play_back_sound()
         from .main_menu import MainMenuScene
 
         self.app.change_scene(MainMenuScene)
-
-    def on_back(self) -> None:
-        self._handle_back_action()
 
     def _draw_back_button(self, surface: pygame.Surface) -> None:
         margin = settings.SCREEN_MARGIN

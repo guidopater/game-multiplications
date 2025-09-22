@@ -6,6 +6,7 @@ import datetime
 import json
 import random
 import string
+import webbrowser
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 
@@ -44,7 +45,6 @@ class SettingsScene(Scene):
         self.feedback_timer = 0.0
         self.has_unsaved_changes = False
 
-        self.music_toggle_rect: pygame.Rect | None = None
         self.effects_toggle_rect: pygame.Rect | None = None
         self.large_text_toggle_rect: pygame.Rect | None = None
         self.feedback_option_rects: Dict[str, pygame.Rect] = {}
@@ -82,6 +82,7 @@ class SettingsScene(Scene):
         self.card_inner_margin = 28
         self.section_spacing = 24
         self.grid_spacing = 14
+        self.support_url = "https://buymeacoffee.com/guidopater"
 
     # Event handling -------------------------------------------------
     def handle_events(self, events: Iterable[pygame.event.Event]) -> None:
@@ -125,17 +126,12 @@ class SettingsScene(Scene):
             self._save_settings()
             return True
         if self.buy_rect and self.buy_rect.collidepoint(content_pos):
-            self._show_support_message()
+            self._open_support_link()
             return True
         if self.footer_back_rect and self.footer_back_rect.collidepoint(content_pos):
             self._handle_back()
             return True
 
-        if self.music_toggle_rect and self.music_toggle_rect.collidepoint(content_pos):
-            self.settings.music_enabled = not self.settings.music_enabled
-            self.has_unsaved_changes = True
-            self._apply_music_volume()
-            return True
         if self.effects_toggle_rect and self.effects_toggle_rect.collidepoint(content_pos):
             self.settings.effects_enabled = not self.settings.effects_enabled
             self.has_unsaved_changes = True
@@ -217,14 +213,16 @@ class SettingsScene(Scene):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
 
-        content_surface_height = surface.get_height() + 1200
-        content_surface = pygame.Surface((surface.get_width(), content_surface_height), pygame.SRCALPHA)
-
-        content_bottom = self._render_content(content_surface)
+        scratch_surface = pygame.Surface((surface.get_width(), surface.get_height()), pygame.SRCALPHA)
+        content_bottom = self._render_content(scratch_surface)
         self.content_height = content_bottom
         self.max_scroll = max(0.0, self.content_height - surface.get_height())
         self.scroll_offset = max(0.0, min(self.scroll_offset, self.max_scroll))
         self.pointer_content_pos = (mouse_x, mouse_y + self.scroll_offset)
+
+        final_height = max(surface.get_height(), int(self.content_height + settings.SCREEN_MARGIN))
+        content_surface = pygame.Surface((surface.get_width(), final_height), pygame.SRCALPHA)
+        self._render_content(content_surface)
 
         surface.blit(content_surface, (0, -int(self.scroll_offset)))
 
@@ -303,16 +301,9 @@ class SettingsScene(Scene):
         surface.blit(heading, heading.get_rect(topleft=(card.left + inner, card.top + inner)))
 
         toggle_y = card.top + inner + heading_h + self.section_spacing
-        self.music_toggle_rect = self._draw_toggle(
-            surface,
-            card.left + inner,
-            toggle_y,
-            self.tr("settings.audio.music", default="Muziek"),
-            self.settings.music_enabled,
-        )
         self.effects_toggle_rect = self._draw_toggle(
             surface,
-            self.music_toggle_rect.right + self.section_spacing,
+            card.left + inner,
             toggle_y,
             self.tr("settings.audio.effects", default="Effecten"),
             self.settings.effects_enabled,
@@ -819,7 +810,8 @@ class SettingsScene(Scene):
             surface.blit(text_surface, text_surface.get_rect(topleft=(card.left + inner, y)))
             y += text_surface.get_height() + 6
 
-        self.buy_rect = pygame.Rect(card.right - inner - 220, card.bottom - inner - 56, 220, 56)
+        button_width = 260
+        self.buy_rect = pygame.Rect(card.right - inner - button_width, card.bottom - inner - 56, button_width, 56)
         face_rect = draw_glossy_button(
             surface,
             self.buy_rect,
@@ -1172,20 +1164,29 @@ class SettingsScene(Scene):
         )
         self.feedback_timer = 3.0
 
-    def _show_support_message(self) -> None:
-        self.feedback_message = self.tr(
-            "settings.support.thank_you",
-            default="Bedankt! Koffielink volgt binnenkort.",
-        )
+    def _open_support_link(self) -> None:
+        opened = False
+        try:
+            opened = webbrowser.open(self.support_url)
+        except Exception:
+            opened = False
+
+        if opened:
+            self.feedback_message = self.tr(
+                "settings.support.thank_you",
+                default="Bedankt! Koffielink volgt binnenkort.",
+            )
+        else:
+            self.feedback_message = self.tr(
+                "settings.support.open_failed",
+                default="Open de link handmatig: {url}",
+                url=self.support_url,
+            )
         self.feedback_timer = 3.0
 
     def update(self, delta_time: float) -> None:
         if self.feedback_timer > 0:
             self.feedback_timer = max(self.feedback_timer - delta_time, 0.0)
-
-    def _apply_music_volume(self) -> None:
-        if pygame.mixer.get_init():
-            pygame.mixer.music.set_volume(1.0 if self.settings.music_enabled else 0.0)
 
 
 __all__ = ["SettingsScene"]

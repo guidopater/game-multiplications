@@ -39,7 +39,8 @@
     "toggle": {
       "on": "Aan",
       "off": "Uit"
-    }
+    },
+    "stop": "Stoppen"
   },
   "main_menu": {
     "greeting": "Hoi {name}!",
@@ -310,8 +311,9 @@
         "Belangrijker nog: geen advertenties, geen tracking, maar gewoon vrolijk en simpel leren.",
         "Vind je het waardevol? Vertel het vooral door! Echt heel blij? Dan mag je me altijd trakteren op een koffie ;)"
       ],
-      "cta": "Koop een koffie",
-      "thank_you": "Bedankt! Koffielink volgt binnenkort."
+      "cta": "Trakteer op een koffie",
+      "thank_you": "Bedankt! Je browser opent de link.",
+      "open_failed": "Open de link handmatig: {url}"
     },
     "save": {
       "saved": "Opgeslagen",
