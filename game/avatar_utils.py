@@ -43,12 +43,11 @@ def apply_round_corners(surface: pygame.Surface, radius: int) -> pygame.Surface:
 
 
 def gradient_from_color(color: Color) -> Gradient:
-    """Generate a warm gradient based on one colour."""
+    """Generate a vivid two-tone gradient from a single colour."""
 
-    top = _blend(color, (255, 255, 255), 0.45)
-    bottom = _blend(color, _rotate_hue(color, 25), 0.25)
-    bottom = _blend(bottom, (0, 0, 0), 0.25)
-    return top, bottom
+    hero = _ensure_brightness(color)
+    partner = _rotate_hue(hero, 70)
+    return _build_gradient(hero, partner)
 
 
 def gradient_from_avatar(path: Path, fallback: Gradient) -> Gradient:
@@ -62,15 +61,9 @@ def gradient_from_avatar(path: Path, fallback: Gradient) -> Gradient:
     if not palette:
         return fallback
 
-    accent = palette[0]
-    secondary = _find_complementary_colour(palette, accent)
-
-    top = _blend(accent, (255, 255, 255), 0.45)
-    bottom_seed = _blend(secondary, accent, 0.25)
-    bottom_seed = _blend(bottom_seed, _rotate_hue(accent, 30), 0.2)
-    bottom = _blend(bottom_seed, (0, 0, 0), 0.25)
-
-    return top, bottom
+    hero = _ensure_brightness(palette[0])
+    partner = _find_playful_partner(palette, hero)
+    return _build_gradient(hero, partner)
 
 
 def _blend(color: Color, target: Color, factor: float) -> Color:
@@ -99,29 +92,40 @@ def _sample_palette(surface: pygame.Surface, sample_size: int = 16) -> list[Colo
     if not pixels:
         return []
 
-    pixels.sort(key=lambda entry: entry[0], reverse=True)
+    pixels.sort(key=lambda entry: (entry[0], entry[1], entry[2]), reverse=True)
     colours = [entry[4] for entry in pixels]
     return colours
 
 
-def _find_complementary_colour(palette: Iterable[Color], accent: Color) -> Color:
-    accent_h, accent_s, accent_v = _rgb_to_hsv(*accent)
-    chosen: Color | None = None
-    best_diff = 0.0
+def _find_playful_partner(palette: Iterable[Color], hero: Color) -> Color:
+    hero_h, hero_s, hero_v = _rgb_to_hsv(*hero)
+    sectors = [
+        (0.0, 1/3),
+        (1/3, 2/3),
+        (2/3, 1.0),
+    ]
+    hero_sector = next((i for i, (start, end) in enumerate(sectors) if start <= hero_h < end), 0)
+
+    candidate: Color | None = None
+    best_score = -1.0
     for colour in palette:
-        if colour == accent:
+        if colour == hero:
             continue
         h, s, v = _rgb_to_hsv(*colour)
-        hue_diff = abs(h - accent_h)
-        hue_diff = min(hue_diff, 1.0 - hue_diff)  # wrap around circle
-        diff = hue_diff + abs(v - accent_v) * 0.25
-        if diff > best_diff and hue_diff > 0.08:
-            best_diff = diff
-            chosen = colour
+        if v < 0.45 or s < 0.4:
+            continue
+        sector = next((i for i, (start, end) in enumerate(sectors) if start <= h < end), 0)
+        if sector == hero_sector:
+            continue
+        hue_diff = min(abs(h - hero_h), 1.0 - abs(h - hero_h))
+        score = s * 0.6 + v * 0.3 + hue_diff * 0.4
+        if score > best_score:
+            best_score = score
+            candidate = colour
 
-    if chosen is None:
-        chosen = _rotate_hue(accent, 40)
-    return chosen
+    if candidate is None:
+        candidate = _rotate_hue(hero, 90)
+    return _ensure_brightness(candidate, min_val=0.75)
 
 
 def _rotate_hue(color: Color, degrees: float) -> Color:
@@ -132,13 +136,45 @@ def _rotate_hue(color: Color, degrees: float) -> Color:
 
 
 def _rgb_to_hsv(r: int, g: int, b: int) -> tuple[float, float, float]:
-    return tuple(value / 255.0 for value in pygame.color.Color(r, g, b).hsva[:3])  # type: ignore[return-value]
+    color = pygame.Color(r, g, b)
+    h, s, v, _ = color.hsva
+    return h / 360.0, s / 100.0, v / 100.0
 
 
 def _hsv_to_rgb(h: float, s: float, v: float) -> tuple[int, int, int]:
     color = pygame.color.Color(0)
     color.hsva = (h * 360.0, s * 100.0, v * 100.0, 100.0)
     return color.r, color.g, color.b
+
+
+def _adjust_color(color: Color, *, sat_mul: float = 1.0, val_mul: float = 1.0, val_add: float = 0.0) -> Color:
+    h, s, v = _rgb_to_hsv(*color)
+    s = max(0.0, min(1.0, s * sat_mul))
+    v = max(0.0, min(1.0, v * val_mul + val_add))
+    r, g, b = _hsv_to_rgb(h, s, v)
+    return int(r), int(g), int(b)
+
+
+def _ensure_brightness(color: Color, *, min_val: float = 0.75) -> Color:
+    h, s, v = _rgb_to_hsv(*color)
+    v = max(v, min_val)
+    s = max(s, 0.65)
+    r, g, b = _hsv_to_rgb(h, s, v)
+    return int(r), int(g), int(b)
+
+
+def _build_gradient(hero: Color, partner: Color) -> Gradient:
+    top = _adjust_color(hero, sat_mul=1.45, val_mul=1.1, val_add=0.18)
+    top = _blend(top, (255, 255, 255), 0.2)
+
+    mid = _blend(hero, partner, 0.4)
+    mid = _adjust_color(mid, sat_mul=1.2, val_mul=1.0, val_add=0.05)
+
+    bottom = _adjust_color(partner, sat_mul=1.4, val_mul=1.0, val_add=0.1)
+    bottom = _blend(bottom, mid, 0.35)
+    bottom = _blend(bottom, (255, 255, 255), 0.05)
+
+    return top, bottom
 
 
 __all__ = [

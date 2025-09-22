@@ -677,7 +677,7 @@ class SettingsScene(Scene):
         for key, x, y, label in specs:
             rect = pygame.Rect(x, y, button_width, 56)
             self.profile_button_rects[key] = rect
-            draw_glossy_button(
+            face_rect = draw_glossy_button(
                 surface,
                 rect,
                 palette,
@@ -686,7 +686,7 @@ class SettingsScene(Scene):
                 corner_radius=24,
             )
             text = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(center=rect.center))
+            surface.blit(text, text.get_rect(center=face_rect.center))
         return card.bottom
 
     def _get_avatar_surface(self, filename: str) -> pygame.Surface | None:
@@ -755,7 +755,7 @@ class SettingsScene(Scene):
                 "reset_scores": {"top": (244, 110, 34), "bottom": (214, 78, 20), "border": (172, 58, 18), "shadow": (138, 44, 18)},
                 "reset_all": {"top": (255, 131, 131), "bottom": (220, 70, 70), "border": (168, 48, 48), "shadow": (140, 36, 36)},
             }[key]
-            draw_glossy_button(
+            face_rect = draw_glossy_button(
                 surface,
                 rect,
                 palette,
@@ -764,10 +764,10 @@ class SettingsScene(Scene):
                 corner_radius=24,
             )
             text_surface = self.button_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text_surface, text_surface.get_rect(center=rect.center))
+            surface.blit(text_surface, text_surface.get_rect(center=face_rect.center))
 
             description_surface = self.helper_font.render(description, True, description_color)
-            desc_rect = description_surface.get_rect(topleft=(rect.right + self.section_spacing, rect.centery - description_surface.get_height() // 2))
+            desc_rect = description_surface.get_rect(topleft=(face_rect.right + self.section_spacing, face_rect.centery - description_surface.get_height() // 2))
             surface.blit(description_surface, desc_rect)
 
             row_top += button_height + row_gap
@@ -820,7 +820,7 @@ class SettingsScene(Scene):
             y += text_surface.get_height() + 6
 
         self.buy_rect = pygame.Rect(card.right - inner - 220, card.bottom - inner - 56, 220, 56)
-        draw_glossy_button(
+        face_rect = draw_glossy_button(
             surface,
             self.buy_rect,
             {
@@ -838,7 +838,7 @@ class SettingsScene(Scene):
             True,
             settings.COLOR_TEXT_PRIMARY,
         )
-        surface.blit(label, label.get_rect(center=self.buy_rect.center))
+        surface.blit(label, label.get_rect(center=face_rect.center))
 
         return card.bottom
 
@@ -847,7 +847,7 @@ class SettingsScene(Scene):
         self.save_rect = pygame.Rect(surface.get_width() - margin - 240, top, 240, 60)
         self.footer_back_rect = pygame.Rect(surface.get_width() - margin - 500, top, 240, 60)
 
-        draw_glossy_button(
+        save_face = draw_glossy_button(
             surface,
             self.save_rect,
             {
@@ -865,9 +865,9 @@ class SettingsScene(Scene):
             default="Opgeslagen" if not self.has_unsaved_changes else "Instellingen opslaan",
         )
         save_text = self.button_font.render(save_label, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(save_text, save_text.get_rect(center=self.save_rect.center))
+        surface.blit(save_text, save_text.get_rect(center=save_face.center))
 
-        draw_glossy_button(
+        back_face = draw_glossy_button(
             surface,
             self.footer_back_rect,
             {
@@ -885,7 +885,7 @@ class SettingsScene(Scene):
             True,
             settings.COLOR_TEXT_PRIMARY,
         )
-        surface.blit(back_text, back_text.get_rect(center=self.footer_back_rect.center))
+        surface.blit(back_text, back_text.get_rect(center=back_face.center))
 
         return max(self.save_rect.bottom, self.footer_back_rect.bottom)
 
@@ -906,7 +906,7 @@ class SettingsScene(Scene):
             "border": (36, 140, 67) if value else (168, 156, 145),
             "shadow": (45, 122, 59) if value else (150, 140, 130),
         }
-        draw_glossy_button(
+        face_rect = draw_glossy_button(
             surface,
             rect,
             palette,
@@ -915,7 +915,7 @@ class SettingsScene(Scene):
             corner_radius=24,
         )
         text = self.option_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(text, text.get_rect(center=rect.center))
+        surface.blit(text, text.get_rect(center=face_rect.center))
         return rect
 
     def _draw_small_button(self, surface: pygame.Surface, rect: pygame.Rect, label: str, selected: bool) -> pygame.Rect:
@@ -925,7 +925,7 @@ class SettingsScene(Scene):
             "border": (45, 118, 189) if selected else (168, 156, 145),
             "shadow": (41, 99, 156) if selected else (150, 140, 130),
         }
-        draw_glossy_button(
+        face_rect = draw_glossy_button(
             surface,
             rect,
             palette,
@@ -934,7 +934,7 @@ class SettingsScene(Scene):
             corner_radius=20,
         )
         text = self.helper_font.render(label, True, settings.COLOR_TEXT_PRIMARY)
-        surface.blit(text, text.get_rect(center=rect.center))
+        surface.blit(text, text.get_rect(center=face_rect.center))
         return rect
 
     def _draw_table_grid(
@@ -966,7 +966,7 @@ class SettingsScene(Scene):
                 "border": (36, 140, 67) if is_selected else (168, 156, 145),
                 "shadow": (45, 122, 59) if is_selected else (150, 140, 130),
             }
-            draw_glossy_button(
+            face_rect = draw_glossy_button(
                 surface,
                 rect,
                 palette,
@@ -975,7 +975,7 @@ class SettingsScene(Scene):
                 corner_radius=18,
             )
             text = self.helper_font.render(str(value), True, settings.COLOR_TEXT_PRIMARY)
-            surface.blit(text, text.get_rect(center=rect.center))
+            surface.blit(text, text.get_rect(center=face_rect.center))
             rects.append((rect, value))
         return rects
 
