@@ -288,7 +288,7 @@ class TestSummaryScene(Scene):
             self.button_font,
             self.button_palettes["menu"],
             text_color=settings.COLOR_TEXT_PRIMARY,
-            callback=self._handle_back_action_wrapper,
+            callback=self._handle_back_action,
         )
 
         self.buttons = [retry_button, menu_button]
