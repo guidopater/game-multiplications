@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#1e1e2f" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <title>Tafelhelden</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #101018; }
+      #canvas { display:block; margin: 0 auto; max-width: 100vw; max-height: 100vh; }
+      #boot { color:#ddd; font: 16px system-ui, sans-serif; text-align:center; padding-top: 20vh; }
+    </style>
+  </head>
+  <body>
+    <div id="boot">Loading… If audio is muted, click to enable.</div>
+    <canvas id="canvas" tabindex="0"></canvas>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+      }
+    </script>
+    <!-- pygbag runtime expects a canvas with id=canvas; the build will inject loader scripts. -->
+  </body>
+  </html>
+

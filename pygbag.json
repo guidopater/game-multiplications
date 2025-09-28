@@ -1,0 +1,18 @@
+{
+  "title": "Tafelhelden",
+  "entrypoint": "main.py",
+  "icon": "assets/images/icon.png",
+  "canvas_id": "canvas",
+  "assets": [
+    "assets/images",
+    "assets/sounds",
+    "assets/fonts",
+    "assets/locale",
+    "web/index.html",
+    "web/manifest.webmanifest",
+    "web/service-worker.js"
+  ],
+  "package_data": [],
+  "python": "3.11"
+}
+

@@ -30,7 +30,7 @@ GRADIENT_BOTTOM = (248, 73, 147)
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 FONT_DIR = ROOT_DIR / "assets" / "fonts"
-TITLE_FONT_FILE = FONT_DIR / "Palamecia Titling.otf"
+TITLE_FONT_FILE = FONT_DIR / "palamecia_titling.otf"
 FONT_PREFERRED = "Avenir Next"
 BODY_FALLBACK = "Verdana"
 

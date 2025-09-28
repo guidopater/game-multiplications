@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Type
 
@@ -28,9 +30,14 @@ class App:
             pygame.mixer.init()
         except pygame.error:
             pass
-        display_info = pygame.display.Info()
-        screen_size = (display_info.current_w, display_info.current_h)
-        self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
+        is_web = sys.platform == "emscripten" or bool(os.environ.get("PYGBAG"))
+        if is_web:
+            screen_size = (1280, 720)
+            self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
+        else:
+            display_info = pygame.display.Info()
+            screen_size = (display_info.current_w, display_info.current_h)
+            self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
         settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT = screen_size
         settings.SCREEN_SIZE = screen_size
         pygame.display.set_caption("Tafelhelden")
@@ -47,7 +54,8 @@ class App:
 
         self.assets_dir = root / "assets"
         self.data_dir = root / "data"
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+        if not is_web:
+            self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self._avatar_options = self._discover_avatars()
 
@@ -75,6 +83,8 @@ class App:
             from .scenes.profile_onboarding import ProfileOnboardingScene
 
             self._scene = ProfileOnboardingScene(self)
+
+        print(f"Scene: {type(self._scene).name}")        
 
     @property
     def scene(self) -> Scene:
@@ -111,14 +121,26 @@ class App:
     def _load_profiles(self) -> List[PlayerProfile]:
         """Load player profiles from JSON if available."""
 
-        config_path = self.data_dir / "profiles.json"
-        if not config_path.exists():
-            return []
+        # Load from localStorage in web builds
+        if sys.platform == "emscripten" or bool(os.environ.get("PYGBAG")):
+            try:
+                import js  # type: ignore
 
-        try:
-            payload = json.loads(config_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            return []
+                raw = js.localStorage.getItem("profiles")
+                if raw is None:
+                    return []
+                payload = json.loads(str(raw))
+            except Exception:
+                return []
+        else:
+            config_path = self.data_dir / "profiles.json"
+            if not config_path.exists():
+                return []
+
+            try:
+                payload = json.loads(config_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                return []
 
         if not isinstance(payload, list):
             return []
@@ -138,9 +160,17 @@ class App:
         return profiles
 
     def save_profiles(self) -> None:
-        config_path = self.data_dir / "profiles.json"
         data = [profile.to_dict() for profile in self.profiles]
-        config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        if sys.platform == "emscripten" or bool(os.environ.get("PYGBAG")):
+            try:
+                import js  # type: ignore
+
+                js.localStorage.setItem("profiles", json.dumps(data))
+            except Exception:
+                pass
+        else:
+            config_path = self.data_dir / "profiles.json"
+            config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def _apply_profile_style(self, profile: PlayerProfile | None) -> None:
         avatar_filename = profile.avatar_filename if profile else None

@@ -2,3 +2,24 @@
 /data/profiles.json
 /data/scores.json
 /data/settings.json
+
+## Build artefacts (pygbag)
+build/
+build/web/
+build/web-cache/
+*.apk
+
+## Python env and bytecode
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+## OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

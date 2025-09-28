@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Dict, List
 
 from .models import TestResult
+
+
+def _is_web_runtime() -> bool:
+    return sys.platform == "emscripten" or bool(os.environ.get("PYGBAG"))
 
 
 class ScoreRepository:
@@ -18,17 +24,37 @@ class ScoreRepository:
         self._load()
 
     def _load(self) -> None:
-        if self.path.exists():
+        if _is_web_runtime():
             try:
-                self._data = json.loads(self.path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                # Start fresh if the file is corrupt.
+                import js  # type: ignore
+
+                raw = js.localStorage.getItem("scores")
+                if raw is None:
+                    self._data = {}
+                else:
+                    self._data = json.loads(str(raw))
+            except Exception:
                 self._data = {}
         else:
-            self._data = {}
+            if self.path.exists():
+                try:
+                    self._data = json.loads(self.path.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    # Start fresh if the file is corrupt.
+                    self._data = {}
+            else:
+                self._data = {}
 
     def save(self) -> None:
-        self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
+        if _is_web_runtime():
+            try:
+                import js  # type: ignore
+
+                js.localStorage.setItem("scores", json.dumps(self._data))
+            except Exception:
+                pass
+        else:
+            self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
 
     def record_test(self, result: TestResult) -> None:
         profile_results = self._data.setdefault(result.profile_id, [])
